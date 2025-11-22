@@ -1,4 +1,35 @@
-Aaaa
-hola
-hhhhh
-buenas 
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
+import os # Para crear carpetas y guardar archivos
+
+# Librerías de Machine Learning
+from sklearn.experimental import enable_iterative_imputer  # noqa
+from sklearn.impute import IterativeImputer
+from sklearn.linear_model import LinearRegression, LogisticRegression
+# =============================================================================
+# I. HERRAMIENTA DE SELECCIÓN (MENÚS NUMÉRICOS)
+# =============================================================================
+
+def listar_y_elegir(lista_opciones, mensaje="Seleccioná una opción"):
+    """Muestra un menú numérico y devuelve el valor real elegido."""
+    print(f"\n--- {mensaje} ---")
+    for i, op in enumerate(lista_opciones):
+        # Si es una tupla (Nombre, Explicación), mostramos lindo
+        if isinstance(op, tuple):
+            print(f"[{i}] {op[0]}")
+        else:
+            print(f"[{i}] {op}")
+    
+    while True:
+        try:
+            inp = input("👉 Ingresá el número: ")
+            idx = int(inp)
+            if 0 <= idx < len(lista_opciones):
+                val = lista_opciones[idx]
+                return val[0] if isinstance(val, tuple) else val
+            print("❌ Número fuera de rango.")
+        except ValueError:
+            print("❌ Por favor, escribí un número entero.")
+
