@@ -176,3 +176,20 @@ def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1):   
             
         plt.title(f"{col_y} por {col_x}", fontsize=14, fontweight='bold')
         plt.grid(axis='y', alpha=0.3); plt.tight_layout(); plt.show()
+ elif estilo == 5 and col_y:                                                   # --- ESTILO 5: BARRAS (Comparación de Medias) ---
+        data_agg = df.groupby(col_x)[col_y].mean().sort_index()                          # Agregación: Agrupa por X y calcula el Promedio (mean) de Y.
+        plt.figure(figsize=(10, 5))
+        ax = data_agg.plot(kind='bar', color="#c44e52", alpha=0.9, edgecolor='black')
+        plt.title(f"Promedio de {col_y} según {col_x}", fontsize=14, fontweight='bold')
+        plt.ylabel(f"Promedio de {col_y}"); plt.xticks(rotation=45)
+        
+        if "probabilidad" in col_y or "imagen" in col_y:                                   # Formato Porcentaje: Si detecta probabilidad, multiplica por 100 y pone %.
+            ax.yaxis.set_major_formatter(mtick.PercentFormatter(100 if data_agg.max()>1 else 1.0, decimals=0))
+        plt.grid(axis='y', linestyle='--'); plt.tight_layout(); plt.show()
+
+    elif estilo == 6 and col_y:                                                        # --- ESTILO 6: LÍNEAS (Tendencias) ---
+        data_agg = df.groupby(col_x)[col_y].mean().sort_index()                                    # Agregación por promedio.
+        plt.figure(figsize=(10, 5))
+        ax = data_agg.plot(kind='line', marker='o', linewidth=3, color="#8172b3")
+        plt.title(f"Tendencia: {col_y} al variar {col_x}", fontsize=14, fontweight='bold')
+        plt.ylabel(col_y); plt.grid(True, linestyle='--', alpha=0.5); plt.tight_layout(); plt.show()
