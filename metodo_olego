@@ -89,5 +89,24 @@ vars_txt = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]      
     if "imagen_candidato" in df.columns: df["imagen_candidato"] = df["imagen_candidato"].clip(0, 100)            # si la imagen del candidato existe entonces las ajustamos a 0 o 100 si pasa alguna de las dos. Función Clip. f(x) = min(max(x, 0), 100).
     
     return df
+def unificar_sexo(df):                                                                                          ## vamos a detectar las columnas de sexo y sus derivados: generando sexo_mas_unificado y sexo_fem_unificado
+    df_out = df.copy() ## Busca todas las columnas que empiecen con 'sexo_'
+    cols_sexo = [c for c in df_out.columns if c.startswith("sexo_")]                                       #buscamos todas las columnas que empiecen por sexo
+    cols_fem = [c for c in cols_sexo if "fem" in c or "mujer" in c or c.endswith("_f")]                   #filtramos por palabras claves entre los "sexo"
+    cols_masc = [c for c in cols_sexo if "masc" in c or "hombre" in c or c.endswith("_m")]
+
+    if cols_fem:
+        df_out["sexo_femenino_unificado"] = df_out[cols_fem].sum(axis=1).clip(0, 1)                 #si tenía sexo_fem=1 y sexo_mujer=0 → 1. si tenía errores tipo 1 y 1 → queda 2 → clip(0,1) lo baja a 1.
+        df_out = df_out.drop(columns=cols_fem)                                                      # Borra las originales para no duplicar.
+    if cols_masc:
+        df_out["sexo_masculino_unificado"] = df_out[cols_masc].sum(axis=1).clip(0, 1)
+        df_out = df_out.drop(columns=cols_masc)
+    return df_out
+
+def imputar_datos(df_limpio):                                                                       # ahora que tenemos las columnas vamos a IMPUTAR con MICE que utiiliza las relaciones matematicas entre variables para estimar los valores faltantes.
+    df = df_limpio.copy()                                                                          ## hacemos una copia del DF
+    cols_cat = [c for c in ["estrato", "sexo", "nivel_educativo"] if c in df.columns]               # Elegimos qué variables categóricas vamos a usar para ayudar a la predicción.
+    if "voto" in df.columns: df = pd.get_dummies(df, columns=["voto"], dummy_na=False)               ## # BINARIZAMOS "voto" y "voto_anterior"(One-Hot Encoding) para que el modelo 'vea' a quién vota la gente. # y use eso para predecir su estrato/edad faltante.
+    if "voto_anterior" in df.columns: df = pd.get_dummies(df, columns=["voto_anterior"], dummy_na=False)
 
 
