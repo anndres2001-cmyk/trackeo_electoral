@@ -151,3 +151,28 @@ def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1):   
         plt.xlabel(col_x); plt.ylabel(col_y)
         plt.tight_layout(); plt.show()
 
+    elif estilo == 3 and col_y and col_grupo:
+        grupos = df[col_grupo].unique()
+        colores = plt.cm.tab10(np.linspace(0, 1, len(grupos)))  # Crea una paleta de colores matemáticamente espaciada
+        mapa = {g: colores[i] for i, g in enumerate(grupos)} # Asigna color a grupo.
+        plt.figure(figsize=(9, 5))
+        plt.scatter(df[col_x], df[col_y], c=[mapa[g] for g in df[col_grupo]], alpha=0.6)   # Dibuja los puntos asignando el color según el mapa.
+        for k, v in mapa.items(): plt.scatter([], [], c=[v], label=k)                    # Truco para la leyenda: Dibuja puntos invisibles para etiquetarlos.
+        plt.title(f"{col_x} vs {col_y} (según {col_grupo})", fontsize=14, fontweight='bold')
+        plt.legend(title=col_grupo); plt.tight_layout(); plt.show()
+
+    elif estilo == 4 and col_y:                                                      # Boxplot
+        orden = sorted(df[col_x].unique().astype(str))         # Ordena las categorías del eje X alfabéticamente.
+        datos = [df.loc[df[col_x].astype(str)==c, col_y].values for c in orden]         # Crea una lista de arrays, uno por cada categoría.
+        plt.figure(figsize=(10, 6))
+        plt.boxplot(datos, labels=orden, showmeans=True, notch=True, patch_artist=True,   # Boxplot calcula: Mediana (línea central), Cuartiles 25% y 75% (caja), y Bigotes (1.5 * IQR).
+                    boxprops=dict(facecolor="white", color="#333"))
+        
+        # Jitter (Ruido): Agrega puntos dispersos aleatoriamente sobre el eje X para mostrar densidad.
+        # np.random.normal(i, 0.04): Centrado en la categoría 'i' con desviación 0.04.
+        for i, d in enumerate(datos, start=1):
+            x = np.random.normal(i, 0.04, size=len(d))
+            plt.plot(x, d, 'o', alpha=0.2, color="#55a868", markersize=4)
+            
+        plt.title(f"{col_y} por {col_x}", fontsize=14, fontweight='bold')
+        plt.grid(axis='y', alpha=0.3); plt.tight_layout(); plt.show()
