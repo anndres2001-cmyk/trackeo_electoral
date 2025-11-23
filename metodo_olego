@@ -1,35 +1,36 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
-import os # Para crear carpetas y guardar archivos
+import pandas as pd               # manejo de Tablas (DataFrames). Matemáticamente son Matrices.
+import numpy as np                # cálculo numérico, maneja vectores y matrices rápidas.
+import matplotlib.pyplot as plt   # librería base para graficar (Ejes, Figuras).
+import matplotlib.ticker as mtick # herramienta para formatear ejes (ej: poner el signo %).
+import os                         # "Operating System". Permite crear carpetas y guardar archivos en tu PC.
 
-# Librerías de Machine Learning
-from sklearn.experimental import enable_iterative_imputer  # noqa
-from sklearn.impute import IterativeImputer
-from sklearn.linear_model import LinearRegression, LogisticRegression
-# =============================================================================
-# I. HERRAMIENTA DE SELECCIÓN (MENÚS NUMÉRICOS)
-# =============================================================================
+# Librerías de Inteligencia Artificial (Scikit-Learn)
+from sklearn.experimental import enable_iterative_imputer  # Habilita el MICE (aún es experimental en sklearn).
+from sklearn.impute import IterativeImputer                # El algoritmo MICE para llenar datos faltantes.
+from sklearn.linear_model import LinearRegression          # Usado por MICE para adivinar números.
+from sklearn.linear_model import LogisticRegression        # Usado para predecir Voto (Sí/No).
 
-def listar_y_elegir(lista_opciones, mensaje="Seleccioná una opción"):
-    """Muestra un menú numérico y devuelve el valor real elegido."""
-    print(f"\n--- {mensaje} ---")
-    for i, op in enumerate(lista_opciones):
-        # Si es una tupla (Nombre, Explicación), mostramos lindo
-        if isinstance(op, tuple):
-            print(f"[{i}] {op[0]}")
+### SELECCIONAR CANDIDATO
+
+def listar_y_elegir(lista_opciones, mensaje="Seleccioná una opción"): #de forma numerica elegimos al candidato a traves de la funcion "listar_y_elegir". recibe una lista de opciones y un mensaje opcional que se muestra como título del menú.
+    print(f"\n--- {mensaje} ---")                  # Imprime el título del menú.
+    for i, op in enumerate(lista_opciones):       # Recorre la "lista_opciones" con enumarate(), indexando el conjunto de opciones (0, 1, 2...).
+        if isinstance(op, tuple):                 # wi la opción es una tupla
+            print(f"[{i}] {op[0]}")               # ... muestra solo el primer nombre.
         else:
-            print(f"[{i}] {op}")
+            print(f"[{i}] {op}")                  # sino, muestra la opción tal cual.
     
-    while True:
+    while True:                                   # bucle infinito: no sale hasta que el usuario escriba bien (return)
         try:
-            inp = input("👉 Ingresá el número: ")
-            idx = int(inp)
-            if 0 <= idx < len(lista_opciones):
-                val = lista_opciones[idx]
-                return val[0] if isinstance(val, tuple) else val
-            print("❌ Número fuera de rango.")
+            inp = input("Ingrese el número: ")    # pide el dato al teclado.
+            idx = int(inp)                        # Intenta convertir ese string a numero entero
+            
+            # Lógica Booleana: Verifica si el número está dentro del rango de la lista.
+            if 0 <= idx < len(lista_opciones):    #el indice dentro de a logica
+                val = lista_opciones[idx]         # recuperando el objeto real de la lista.
+                return val[0] if isinstance(val, tuple) else val # Devuelve el valor limpio.
+            
+            print("EROR.")      # Si el número es muy alto o negativo.
         except ValueError:
-            print("❌ Por favor, escribí un número entero.")
+            print("ERROR. Escribime un numero válido.") # Si escribió letras en vez de números.
 
