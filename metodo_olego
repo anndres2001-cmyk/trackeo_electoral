@@ -193,3 +193,21 @@ def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1):   
         ax = data_agg.plot(kind='line', marker='o', linewidth=3, color="#8172b3")
         plt.title(f"Tendencia: {col_y} al variar {col_x}", fontsize=14, fontweight='bold')
         plt.ylabel(col_y); plt.grid(True, linestyle='--', alpha=0.5); plt.tight_layout(); plt.show()
+
+# Ejecucucion
+if __name__ == "__main__":                                                             # Garantiza que el código SOLO se ejecuta si corrés el archivo directamente (no si lo importás).
+    ARCHIVO = "simulated_tracking.csv"                                                           # Definir nombre del archivo (Cambiar si usás otro CSV).
+    
+    try:                                                                               #Inicia bloque
+        print("¡HOLA GRUPO! Estoy procesando datos del CSV...")
+        
+        # 1. CARGA
+        df_raw = pd.read_csv(ARCHIVO)     # Lee CSV del disco y llamamos a TODAS las funciones
+        df_clean = preparar_base(df_raw)  # Limpia nombres y nulos.
+        df_full = imputar_datos(df_clean) # Rellena datos faltantes con IA.
+        df_full = unificar_sexo(df_full)  # Arregla dummies de sexo.
+        
+        # 2. SELECCIÓN DE OBJETIVO (A QUIÉN QUEREMOS PREDECIR)  # filtra columnas que sean de voto actual.
+        cols_voto = [c for c in df_full.columns if "voto_" in c and "anterior" not in c] # agarra todas las columnas de voto actual (voto_a, voto_b, voto_c, etc.). Descarta las de voto anterior.
+        col_target = listar_y_elegir(cols_voto, "¿A quien queres trackear?") # Muestra menú interactivo y el usuario elige qué candidato quiere modelar.
+
