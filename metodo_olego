@@ -69,5 +69,25 @@ def preparar_base(df_raw): #vamos a usar el CSV como base cruda #vamos a normali
         raise ValueError("ERROR: faltan columnas obligatorias en el CSV.")
 
     df = df.rename(columns=col_map) # aplica los renombres definidos en col_map. ACA SE ESTANDARIZAN las variables para el resto del pipeline.
+vars_txt = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]                                  ## UNA VEZ las columnas esten limpias hay que limpiarlas, a las variables (string) cualuqier cosa reemplazamos por np.nan
+    for col in vars_txt:                                                                                        ## Recorremos una por una todas esas columnas.
+        if col in df.columns:                                                                                    ## verificamos que la columna exista realmente en el DataFrame.
+            df[col] = df[col].astype(str).str.strip().str.lower().replace(["nan", "none", "null", "", " "], np.nan) ##las estandariza y al resto las vuelve NaN
+
+    vars_num = ["edad", "integrantes_h", "imagen_candidato"]                                                      ## a las Variables numérica las forzamos a número. 'errors="coerce"' convierte errores en NaN (Vacío).
+    for col in vars_num:                                                                                         ## Lista de columnas numéricas que pueden venir mal cargadas.
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    criticas = ["fecha", "encuesta", "integrantes_h", "imagen_candidato", "voto", "voto_anterior"]              # # Si falta fecha, voto o imagen, la encuesta no sirve. Se elimina la fila.
+    criticas_reales = [c for c in criticas if c in df.columns]                                                  # Filtramos solo las que existen en "criticas" a "critical_reales"
+    
+    n_antes = len(df)                                                                                           ## guardamos las filas en una variable n_antes , antes de eliminarlas
+    df = df.dropna(subset=criticas_reales)                                                                       # Drop NaN (Borrar Nulos). Elimina filas inservibles: sin fecha, sin voto, sin imagen, etc.
+    print(f"Se eliminaron {n_antes - len(df)} filas por falta de datos")
+
+    if "imagen_candidato" in df.columns: df["imagen_candidato"] = df["imagen_candidato"].clip(0, 100)            # si la imagen del candidato existe entonces las ajustamos a 0 o 100 si pasa alguna de las dos. Función Clip. f(x) = min(max(x, 0), 100).
+    
+    return df
 
 
