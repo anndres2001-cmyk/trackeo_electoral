@@ -263,3 +263,32 @@ if __name__ == "__main__":                                                      
         plt.grid(True, linestyle="--", alpha=0.5); plt.tight_layout(); plt.show()
         # =============================================================================
 
+ print("Un segundo que estamos Guardando archivos...") 
+
+# 4. EXPORTACIÓN DE ARCHIVOS (FIX PARA WINDOWS)
+        # A) Guardar la Base Final Completa
+        df_full.to_csv("base_final_procesada.csv", index=False)         #al DF #df_full" la guardamos en un CSV
+        print("   -> 'base_final_procesada.csv' guardado.")
+        
+        # B) Guardar CSVs Binarizados (Tracking)
+        os.makedirs("archivos_tracking", exist_ok=True)            # crea una carpeta en tu servidor
+        
+        
+       # B) Guardar CSVs Binarizados (Tracking) - VERSIÓN BLINDADA
+        os.makedirs("archivos_tracking", exist_ok=True)
+        
+        # Limpieza profunda de nombres de columna por si las dummies generaron basura
+        df_full.columns = (df_full.columns.str.replace(r"[^a-z0-9_]", "", regex=True))
+        
+        cols_bin = [c for c in df_full.columns if df_full[c].nunique()<=2 and c not in ["fecha","encuesta"]]
+        
+        for col in cols_bin:
+            # Sanitización: Elimina caracteres prohibidos en nombres de archivo de Windows
+            nombre_limpio = col.replace("?", "").replace("/", "").replace("\\", "")
+            try:
+                df_full[["fecha","encuesta",col]].to_csv(f"archivos_tracking/tracking_{nombre_limpio}.csv", index=False)
+            except OSError:
+                print(f"⚠️ AVISO: No se pudo guardar '{col}' por caracteres inválidos.")
+        
+        print(f"T M A P  -> Archivos guardados en carpeta 'archivos_tracking'.")
+
