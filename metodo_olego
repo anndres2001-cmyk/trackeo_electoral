@@ -243,4 +243,23 @@ if __name__ == "__main__":                                                      
         
         # 1. Preparamos los datos: copiamos solo lo necesario
         df_track = df_full[["fecha", "encuesta", col_target]].copy()
+   # 2. Aseguramos que la fecha sea cronológica (Matemática: Ordenamiento Temporal)
+        df_track["fecha"] = pd.to_datetime(df_track["fecha"], format="mixed", dayfirst=False)
+        df_track = df_track.set_index("fecha").sort_index()
+        
+        # 3. Menú para elegir la ventana (El "N" del promedio)
+        ventana_str = listar_y_elegir(["Semanal (7D)", "Mensual (30D)", "Trimestral (90D)"], "Elegí ventana de suavizado")
+        ventana = "90D" if "90" in ventana_str else "30D" if "30" in ventana_str else "7D"
+        
+        # 4. Cálculo Matemático: Media Móvil Simple (SMA)
+        # Formula: Promedio de los puntos entre (t) y (t - ventana)
+        df_track["media_movil"] = df_track[col_target].rolling(ventana).mean()
+        
+        # 5. Gráfico
+        plt.figure(figsize=(10, 5))
+        ax = df_track["media_movil"].plot(linewidth=2.5, color="#d62728")
+        ax.yaxis.set_major_formatter(mtick.PercentFormatter(1.0, decimals=0)) # Eje Y en %
+        plt.title(f"Evolución Intención de Voto: {col_target.upper()} ({ventana})", fontsize=14)
+        plt.grid(True, linestyle="--", alpha=0.5); plt.tight_layout(); plt.show()
+        # =============================================================================
 
