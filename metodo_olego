@@ -129,4 +129,23 @@ def imputar_datos(df_limpio):                                                   
             pass # si falla (ej: matriz vacía), devolvemos como estaba.
         
     return df_encoded
+# Graficos
+
+def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1):    # ahora GRAFICOS usando matplotlib. DF: tabla de graficos. col x/ col_y
+    plt.style.use('seaborn-v0_8-whitegrid')                                      # configuramos estética (fondo blanco con grilla suave).
+    
+    if estilo == 1:                                                              # 1- vamos a dar la opcion de elegir el grafico: histograma
+        variable = df[col_x]
+        plt.figure(figsize=(8, 5))
+        plt.hist(variable, bins=20, edgecolor="black", color="#69b3a2", alpha=0.8) # bins= divide el rango de datos en 20 cajones
+        plt.title(f"Distribución de {col_x}", fontsize=14, fontweight='bold')
+        plt.ylabel("Cantidad de Casos"); plt.xlabel(col_x)
+        plt.tight_layout(); plt.show()
+
+    elif estilo == 2 and col_y:                                                 # 2- scatter
+        plt.figure(figsize=(8, 5))
+        plt.scatter(df[col_x], df[col_y], alpha=0.5, color="#4c72b0")          # Plotea puntos (x, y) en el plano cartesiano.
+        plt.title(f"Correlación: {col_x} vs {col_y}", fontsize=14, fontweight='bold')
+        plt.xlabel(col_x); plt.ylabel(col_y)
+        plt.tight_layout(); plt.show()
 
