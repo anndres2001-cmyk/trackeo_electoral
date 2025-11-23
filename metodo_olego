@@ -34,3 +34,40 @@ def listar_y_elegir(lista_opciones, mensaje="Seleccioná una opción"): #de form
         except ValueError:
             print("ERROR. Escribime un numero válido.") # Si escribió letras en vez de números.
 
+# LIMPIEZA
+def preparar_base(df_raw): #vamos a usar el CSV como base cruda #vamos a normalizar los nombres de las columnas #eliminamos filas que no sirvan (sin fecha o voto)
+    df = df_raw.copy() # creamos una copia en memoria para no romper el original df_raw.copy()
+    df.columns = (df.columns.str.strip().str.lower() # .str.strip(): Saca espacios a los costados. # .str.lower(): Pasa todo a minúsculas.
+                  .str.replace(r"[^a-z0-9_ ]", "", regex=True)
+                  .str.replace(r"\s+", "_", regex=True)) # eeemplaza espacios internos por guion bajo. # regex r"[^a-z0-9_ ]": "Si NO es letra, número o guion bajo, bórralo".
+    
+    cols = df.columns                                     # Guarda la lista de nombres limpios.
+    print("\nDIAGNÓSTICO DE COLUMNAS")
+
+    try:                                                                                                   # con "try" niciamos un bloque que atrapará errores si falta alguna columna.
+        c_fecha = [c for c in cols if "fecha" in c or "date" in c or "time" in c][0]                       # busca columna que tenga "fecha", "date" o "time". Toma la primera [0].
+        c_id = [c for c in cols if ("ident" in c or "id_" in c or "encuesta" in c) and "fecha" not in c][0] # usca ID: debe decir "id" o "encuesta" PERO NO "fecha" (Lógica: A y No B).
+        c_estrato_list = [c for c in cols if "estrato" in c or "socio" in c]                                # busca Estrato: puede no existir, por eso chequeamos si la lista está vacía al final.
+        c_estrato = c_estrato_list[0] if c_estrato_list else None                                           # busca posibles columnas de estrato; puede haber 0 o más.
+        c_sexo = [c for c in cols if "sexo" in c or "genero" in c][0]                                         
+        c_edad = [c for c in cols if "edad" in c or "anos" in c][0]
+        c_educ = [c for c in cols if "educ" in c or "nivel" in c or "instruccion" in c][0]
+        c_hogar = [c for c in cols if "integrantes" in c or "hogar" in c or "personas" in c][0]
+        c_imagen = [c for c in cols if "imagen" in c][0]
+        c_voto = [c for c in cols if "voto" in c and "anterior" not in c][0]                                  # en caso de voto elegimos que no sea "anterior"
+        c_voto_ant = [c for c in cols if "anterior" in c][0]
+
+        col_map = {                                                                                            #a las busquedas de nombres las pusimos dentro de un diccionario para poder integrarlas mejor y cambiarles el nombre
+            c_fecha: "fecha", c_id: "encuesta", c_sexo: "sexo", c_edad: "edad",
+            c_educ: "nivel_educativo", c_hogar: "integrantes_h", c_imagen: "imagen_candidato",
+            c_voto: "voto", c_voto_ant: "voto_anterior"
+        }
+        if c_estrato: col_map[c_estrato] = "estrato" #solo renombra estrato si existe.
+
+        print(f"Columnas identificadas")
+    except IndexError:                                                                                         # Si alguna lista [c for c...] quedó vacía, [0] significa que da ERROR, por lo tanto, que imprima error
+        raise ValueError("ERROR: faltan columnas obligatorias en el CSV.")
+
+    df = df.rename(columns=col_map) # aplica los renombres definidos en col_map. ACA SE ESTANDARIZAN las variables para el resto del pipeline.
+
+
