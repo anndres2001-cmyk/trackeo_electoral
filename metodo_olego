@@ -211,3 +211,36 @@ if __name__ == "__main__":                                                      
         cols_voto = [c for c in df_full.columns if "voto_" in c and "anterior" not in c] # agarra todas las columnas de voto actual (voto_a, voto_b, voto_c, etc.). Descarta las de voto anterior.
         col_target = listar_y_elegir(cols_voto, "¿A quien queres trackear?") # Muestra menú interactivo y el usuario elige qué candidato quiere modelar.
 
+        # 3. MODELADO LOGÍSTICO (REGRESIÓN)
+        ### fecha → no predice
+        ### encuesta (ID) → ruido
+        ### el propio col_target → escaparía fuga de datos
+        ### otros "voto" actuales → también fuga de datos.
+        
+        excluir = ["fecha","encuesta",col_target] + [c for c in df_full.columns if "voto_" in c and c!=col_target]  ## definimos las variables que queremos excluir de para graficar. X (predictoria) e Y (objetivo)
+        X = df_full.drop(columns=excluir, errors='ignore')  # indepdencia necesaria para elegir que variables predecir       # Excluimos 'fecha' y 'encuesta' (no predicen) y el propio voto para no hacer trampa.
+        Y = df_full[col_target]                                                                                      ## pero las agregamos aca. 
+        
+        # 3.2 Entrenamos el modelo logístico. # es la Instancia del modelo "Logit". max_iter=1000 evita problemas de convergencia.
+        model = LogisticRegression(max_iter=1000)     # Ecuación: P(Voto) = 1 / (1 + e^-(B0 + B1*Edad + B2*Estrato...))
+        model.fit(X, Y)                                ## Ajusta la regresión logística usando todas las filas completas.
+        
+        
+        df_full["probabilidad_voto"] = model.predict_proba(X)[:, 1] * 100   ## # Creamos la variable 'Probabilidad de Voto' (0 a 100) para usar en gráficos.  #aplica la sigmoide #convierte probabilidad a porcentaje
+        
+
+        # Extraemos los Coeficientes (Betas) de la regresión. # coeficiente positivo: Aumenta chance de voto. # negativo: Disminuye.
+        coefs = pd.DataFrame({"Variable": X.columns, "Peso": model.coef_[0]})   ## extrae los coeficientes, es decir las BETAS (b0 b1, ...) cada columna X elegida.... dentro del DF para ponerlo dentro de "coefs"
+        coefs["Impacto_Absoluto"] = coefs["Peso"].abs() #                        # vamos a medir el impacto absoluto de cada coefs y los valores absolutos de su PESO en la variable elegida
+        top_5 = coefs.sort_values("Impacto_Absoluto", ascending=False).head(5)    # mostramos los primeros 5 #ordena con sort.values() dentro de "top_5"
+        
+        print(f"\n Los cinco coeficientes que mas influyen: {col_target.upper()}")
+        print(top_5[["Variable", "Peso"]].to_string(index=False))
+        print("------------------------------------------------------------------\n")
+
+        # Elegir tracking tempral (rolling window mean())
+        print("\n GENERANDO TRACKING TEMPORAL...")
+        
+        # 1. Preparamos los datos: copiamos solo lo necesario
+        df_track = df_full[["fecha", "encuesta", col_target]].copy()
+
