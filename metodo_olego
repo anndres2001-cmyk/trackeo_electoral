@@ -108,6 +108,7 @@ def imputar_datos(df_limpio):                                                   
     cols_cat = [c for c in ["estrato", "sexo", "nivel_educativo"] if c in df.columns]               # Elegimos qué variables categóricas vamos a usar para ayudar a la predicción.
     if "voto" in df.columns: df = pd.get_dummies(df, columns=["voto"], dummy_na=False)               ## # BINARIZAMOS "voto" y "voto_anterior"(One-Hot Encoding) para que el modelo 'vea' a quién vota la gente. # y use eso para predecir su estrato/edad faltante.
     if "voto_anterior" in df.columns: df = pd.get_dummies(df, columns=["voto_anterior"], dummy_na=False)
+
 # Binarizamos las demográficas faltantes
     df_encoded = pd.get_dummies(df, columns=cols_cat, dummy_na=False)
     
@@ -129,6 +130,7 @@ def imputar_datos(df_limpio):                                                   
             pass # si falla (ej: matriz vacía), devolvemos como estaba.
         
     return df_encoded
+
 # Graficos
 
 def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1):    # ahora GRAFICOS usando matplotlib. DF: tabla de graficos. col x/ col_y
