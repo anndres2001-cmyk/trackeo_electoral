@@ -108,3 +108,25 @@ def imputar_datos(df_limpio):                                                   
     cols_cat = [c for c in ["estrato", "sexo", "nivel_educativo"] if c in df.columns]               # Elegimos qué variables categóricas vamos a usar para ayudar a la predicción.
     if "voto" in df.columns: df = pd.get_dummies(df, columns=["voto"], dummy_na=False)               ## # BINARIZAMOS "voto" y "voto_anterior"(One-Hot Encoding) para que el modelo 'vea' a quién vota la gente. # y use eso para predecir su estrato/edad faltante.
     if "voto_anterior" in df.columns: df = pd.get_dummies(df, columns=["voto_anterior"], dummy_na=False)
+# Binarizamos las demográficas faltantes
+    df_encoded = pd.get_dummies(df, columns=cols_cat, dummy_na=False)
+    
+    # Algoritmo MICE:
+    # Itera (repite) regresiones lineales.
+    # Primero: rellena con el promedio.
+    # Segundo: predice Edad usando (Voto + Estrato). Actualiza Edad.
+    # Tercero: predice Estrato usando (Voto + Edad nueva).
+    # ... Repite 20 veces (max_iter) hasta que los números se estabilizan (convergen).
+    imputer = IterativeImputer(estimator=LinearRegression(), max_iter=20, random_state=42, min_value=0) # creamos el objeto MICE que imputará los valores faltantes usando regresiones lineales iteradas. 
+    
+    
+    cols_si = [c for c in df_encoded.columns if c not in ["fecha", "encuesta"]]    # celeccionamos todas las columnas numéricas excepto los IDs y Fechas (que no tienen correlación matemática útil).
+    if cols_si:
+        try:    #Abre bloque seguro para ejecutar el imputador sin romper el programa si falla.
+            df_encoded[cols_si] = imputer.fit_transform(df_encoded[cols_si])     ## ajusta regresiones internas y rellena todos los valores faltantes. El imputador devuelve una matriz numérica completa y la
+            if "edad" in df_encoded.columns: df_encoded["edad"] = df_encoded["edad"].round().astype(int) # Si la columna “edad” existe luego del proceso entonces redondeo: La edad estimada puede ser 34.6 años -> pasamos a 35.
+        except: 
+            pass # si falla (ej: matriz vacía), devolvemos como estaba.
+        
+    return df_encoded
+
