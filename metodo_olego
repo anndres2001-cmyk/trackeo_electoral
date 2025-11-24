@@ -336,5 +336,27 @@ if __name__ == "__main__":                                                      
                 cols_cat_orig = [c for c in df_clean.columns if c in v_cat]
                 cx = listar_y_elegir(cols_cat_orig, "Categórica (Eje X)")
                 cy = listar_y_elegir(["probabilidad_voto", "imagen_candidato", "edad"], "Numérica
+(Eje Y)")
+                
+                df_temp = df_full.copy()
+                df_temp[cx] = df_clean[cx] # <--- CAMBIO CLAVE: df_clean
+                graficar_estilo_premium(df_temp, cx, cy, estilo=4)
+            
+            elif "Barras" in opcion:
+                cols_cat_orig = [c for c in df_clean.columns if c in v_cat]
+                cx = listar_y_elegir(cols_cat_orig, "Grupos (Eje X)")
+                cy = listar_y_elegir(["probabilidad_voto", "imagen_candidato"], "Promedio de (Eje Y)")
+                
+                df_temp = df_full.copy()
+                df_temp[cx] = df_clean[cx] # <--- CAMBIO CLAVE: df_clean
+                graficar_estilo_premium(df_temp, cx, cy, estilo=5)
+                
+            
+            elif "Líneas" in opcion:                                                                 #(Técnicamente una regresión no paramétrica muy simple)
+                cx = listar_y_elegir(["edad", "integrantes_h"], "Variable Continua (Eje X)")
+                cy = listar_y_elegir(["probabilidad_voto", "imagen_candidato"], "Variable (Eje Y)")    #Y(x)=promedio de todos los Y donde la variable X = x
+                graficar_estilo_premium(df_full, cx, cy, estilo=6)
 
+    except Exception as e:
+        print(f"\n Error Inesperado: {e}")
 
