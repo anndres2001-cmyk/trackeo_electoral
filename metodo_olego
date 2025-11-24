@@ -281,6 +281,24 @@ elif estilo == 7 and gdf_mapa is not None:                                      
 
         # Gráfico del mapa mejorado
         fig, ax = plt.subplots(1, 1, figsize=(10, 12))
+final.plot(
+            column="valor_medio",
+            cmap='OrRd',
+            ax=ax,
+            edgecolor='gray',
+            legend=True,
+            vmin=datos_validos["valor_medio"].min(),
+            vmax=datos_validos["valor_medio"].max(),
+            missing_kwds={
+                'color': '#f0f0f0',
+                'hatch': '///',
+                'label': 'Sin datos'
+            }
+        )
+
+        plt.axis('off')
+        plt.title(f"Mapa: {col_x} por provincia\n(promedio)", fontsize=16)
+        plt.show()
 
 # Ejecucucion
 if __name__ == "__main__":                                                             # Garantiza que el código SOLO se ejecuta si corrés el archivo directamente (no si lo importás).
