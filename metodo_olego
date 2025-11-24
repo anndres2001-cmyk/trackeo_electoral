@@ -14,7 +14,7 @@ from sklearn.impute import IterativeImputer                # El algoritmo MICE p
 from sklearn.linear_model import LinearRegression          # Usado por MICE para adivinar números.
 from sklearn.linear_model import LogisticRegression        # Usado para predecir Voto (Sí/No).
 
-# --- AGREGADO MAPAS ---
+#CARGAMOS MAPA
 def cargar_mapa_ign():
     print("Cargando mapa 'provincias.json'...") #función para buscar el archivo provincia.json en la carpeta -> datos de las IGN
 
@@ -57,7 +57,7 @@ def listar_y_elegir(lista_opciones, mensaje="Seleccioná una opción"): #de form
             
             print("EROR.")      # Si el número es muy alto o negativo.
         except ValueError:
-            print("ERROR. Escribime un numero válido.") # Si escribió letras en vez de números.
+            print("ERROR. Por favor, escribime un numero válido.") # Si escribió letras en vez de números.
 
 # LIMPIEZA
 def preparar_base(df_raw): #vamos a usar el CSV como base cruda #vamos a normalizar los nombres de las columnas #eliminamos filas que no sirvan (sin fecha o voto)
@@ -94,7 +94,7 @@ def preparar_base(df_raw): #vamos a usar el CSV como base cruda #vamos a normali
         raise ValueError("ERROR: faltan columnas obligatorias en el CSV.")
 
     df = df.rename(columns=col_map) # aplica los renombres definidos en col_map. ACA SE ESTANDARIZAN las variables para el resto del pipeline.
-vars_txt = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]                                  
+    vars_txt = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]                                  
 
 # Crea una lista que contiene los nombres estandarizados de todas las variables categóricas que necesitan una limpieza especial.
 
@@ -117,7 +117,7 @@ vars_txt = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]
 
     if "imagen_candidato" in df.columns: df["imagen_candidato"] = df["imagen_candidato"].clip(0, 100)            # si la imagen del candidato existe entonces las ajustamos a 0 o 100 si pasa alguna de las dos. Función Clip. f(x) = min(max(x, 0), 100).
     
-# --- AGREGADO MAPAS: Traductor Estrato -> Mapa ---
+#AGREGADO MAPAS:
     if "estrato" in df.columns:   # Limpieza base
         df["estrato"] = df["estrato"].str.lower().str.strip()  # Diccionario para unificar tus nombres con el IGN
         dicc_ign = {
@@ -148,13 +148,15 @@ def unificar_sexo(df):                                                          
         df_out = df_out.drop(columns=cols_masc)
     return df_out
 
-def imputar_datos(df_limpio):                                                                       # ahora que tenemos las columnas vamos a IMPUTAR con MICE que utiiliza las relaciones matematicas entre variables para estimar los valores faltantes.
+def imputar_datos(df_limpio):  # ahora que tenemos las columnas vamos a IMPUTAR con MICE que utiiliza las relaciones matematicas entre variables para estimar los valores faltantes.
+    #columnas categoricas
+
     df = df_limpio.copy()                                                                          # hacemos una copia del DF
     cols_cat = [c for c in ["estrato", "sexo", "nivel_educativo"] if c in df.columns]               # Elegimos qué variables categóricas vamos a usar para ayudar a la predicción.
     if "voto" in df.columns: df = pd.get_dummies(df, columns=["voto"], dummy_na=False)               ## # BINARIZAMOS "voto" y "voto_anterior"(One-Hot Encoding) para que el modelo 'vea' a quién vota la gente. # y use eso para predecir su estrato/edad faltante.
     if "voto_anterior" in df.columns: df = pd.get_dummies(df, columns=["voto_anterior"], dummy_na=False)
 
-# Binarizamos las demográficas faltantes
+    # Binarizamos las demográficas faltantes
     df_encoded = pd.get_dummies(df, columns=cols_cat, dummy_na=False)
     
     # Algoritmo MICE:
@@ -166,7 +168,7 @@ def imputar_datos(df_limpio):                                                   
     imputer = IterativeImputer(estimator=LinearRegression(), max_iter=20, random_state=42, min_value=0) # creamos el objeto MICE que imputará los valores faltantes usando regresiones lineales iteradas. 
     
     
-    cols_si = [c for c in df_encoded.columns if c not in ["fecha", "encuesta"]]    # celeccionamos todas las columnas numéricas excepto los IDs y Fechas (que no tienen correlación matemática útil).
+    cols_si = [c for c in df_encoded.columns if c not in ["fecha", "encuesta", "estrato_mapa"]]    # celeccionamos todas las columnas numéricas excepto los IDs y Fechas (que no tienen correlación matemática útil).
     if cols_si:
         try:    #Abre bloque seguro para ejecutar el imputador sin romper el programa si falla.
             df_encoded[cols_si] = imputer.fit_transform(df_encoded[cols_si])     ## ajusta regresiones internas y rellena todos los valores faltantes. El imputador devuelve una matriz numérica completa
@@ -345,7 +347,8 @@ final.plot(
 
 # Ejecucucion
 if __name__ == "__main__":                                                             # Garantiza que el código SOLO se ejecuta si corrés el archivo directamente (no si lo importás).
-    ARCHIVO = "simulated_tracking.csv"                                                           # Definir nombre del archivo (Cambiar si usás otro CSV).
+    entrada = input("Ingresa el nombre del archivo: ").strip()
+    ARCHIVO = entrada                                                          # Definir nombre del archivo (Cambiar si usás otro CSV).
     
     try:                                                                               #Inicia bloque
         print("¡HOLA GRUPO! Estoy procesando datos del CSV...")
@@ -356,9 +359,9 @@ if __name__ == "__main__":                                                      
         df_full = imputar_datos(df_clean) # Rellena datos faltantes con IA.
         df_full = unificar_sexo(df_full)  # Arregla dummies de sexo.
         
-gdf_argentina = cargar_mapa_ign() 
+        gdf_argentina = cargar_mapa_ign() 
 
-    if "estrato_mapa" in df_clean.columns: 
+        if "estrato_mapa" in df_clean.columns: 
             df_full["estrato_mapa"] = df_clean["estrato_mapa"]
 
         # 2. SELECCIÓN DE OBJETIVO (A QUIÉN QUEREMOS PREDECIR)  # filtra columnas que sean de voto actual.
@@ -371,7 +374,7 @@ gdf_argentina = cargar_mapa_ign()
         ### el propio col_target → escaparía fuga de datos
         ### otros "voto" actuales → también fuga de datos.
         
-        excluir = ["fecha","encuesta",col_target] + [c for c in df_full.columns if "voto_" in c and c!=col_target]  ## definimos las variables que queremos excluir de para graficar. X (predictoria) e Y (objetivo)
+        excluir = ["fecha","encuesta", "estrato_mapa", col_target] + [c for c in df_full.columns if "voto_" in c and c!=col_target]  ## definimos las variables que queremos excluir de para graficar. X (predictoria) e Y (objetivo)
         X = df_full.drop(columns=excluir, errors='ignore')  # indepdencia necesaria para elegir que variables predecir       # Excluimos 'fecha' y 'encuesta' (no predicen) y el propio voto para no hacer trampa.
         Y = df_full[col_target]                                                                                      ## pero las agregamos aca. 
         
@@ -397,7 +400,8 @@ gdf_argentina = cargar_mapa_ign()
         
         # 1. Preparamos los datos: copiamos solo lo necesario
         df_track = df_full[["fecha", "encuesta", col_target]].copy()
-   # 2. Aseguramos que la fecha sea cronológica (Matemática: Ordenamiento Temporal)
+
+        # 2. Aseguramos que la fecha sea cronológica (Matemática: Ordenamiento Temporal)
         df_track["fecha"] = pd.to_datetime(df_track["fecha"], format="mixed", dayfirst=False)
         df_track = df_track.set_index("fecha").sort_index()
         
@@ -415,11 +419,11 @@ gdf_argentina = cargar_mapa_ign()
         ax.yaxis.set_major_formatter(mtick.PercentFormatter(1.0, decimals=0)) # Eje Y en %
         plt.title(f"Evolución Intención de Voto: {col_target.upper()} ({ventana})", fontsize=14)
         plt.grid(True, linestyle="--", alpha=0.5); plt.tight_layout(); plt.show()
-        # =============================================================================
+        
 
- print("Un segundo que estamos Guardando archivos...") 
+         print("Un segundo que estamos Guardando archivos...") 
 
-# 4. EXPORTACIÓN DE ARCHIVOS (FIX PARA WINDOWS)
+
         # A) Guardar la Base Final Completa
         df_full.to_csv("base_final_procesada.csv", index=False)         #al DF #df_full" la guardamos en un CSV
         print("   -> 'base_final_procesada.csv' guardado.")
@@ -442,18 +446,19 @@ gdf_argentina = cargar_mapa_ign()
             try:
                 df_full[["fecha","encuesta",col]].to_csv(f"archivos_tracking/tracking_{nombre_limpio}.csv", index=False)
             except OSError:
-                print(f"⚠️ AVISO: No se pudo guardar '{col}' por caracteres inválidos.")
+                print(f"ESPERA: No se pudo guardar '{col}' por caracteres inválidos.")
         
-        print(f"T M A P  -> Archivos guardados en carpeta 'archivos_tracking'.")
-        # 5. MENÚ INTERACTIVO DE GRÁFICOS
-        vars_disp = [c for c in df_full.columns if c not in ["fecha", "encuesta"]]             ## Quita columnas que no sirven para gráficos estadísticos.
-        v_num = [c for c in vars_disp if df_full[c].nunique() > 5]  # Numéricas (muchos valores). ## Sirve para SCATTER, HISTOGRAMAS, LINEAS, REGRESION VISUAL
-       # CORRECCIÓN: Definimos las categóricas explícitamente buscando en df_clean
-        # Esto asegura que aparezcan "estrato", "sexo", "nivel_educativo"
-        posibles_cat = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]
-        v_cat_reales = [c for c in posibles_cat if c in df_clean.columns] # Categóricas (pocos valores). ## Sirve para BOXPLOT, BARRAS, COMPARACIONES POR GRUPO
+        print(f"TMAP! Archivos guardados en carpeta 'archivos_tracking'.")
 
-        while True:                                                                               ## CONTINUA EL MENU INTERACTIVO con los nombres de las opciones
+        # MENÚ INTERACTIVO DE GRÁFICOS
+        vars_disp = [c for c in df_full.columns if c not in ["fecha", "encuesta"]]             ## Quita columnas que no sirven para gráficos estadísticos.
+        v_num = [c for c in vars_disp if df_full[c].nunique() > 5]                            # Numéricas (muchos valores). ## Sirve para SCATTER, HISTOGRAMAS, LINEAS, REGRESION VISUAL
+        posibles_cat = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]        # CORRECCIÓN: Definimos las categóricas explícitamente buscando en df_clean # Esto asegura que aparezcan "estrato", "sexo", "nivel_educativo"
+        v_cat_reales = [c for c in posibles_cat if c in df_clean.columns]                     # Categóricas (pocos valores). ## Sirve para BOXPLOT, BARRAS, COMPARACIONES POR GRUPO
+
+        v_cat = v_cat_reales
+
+        while True:                                                                   ## CONTINUA EL MENU INTERACTIVO con los nombres de las opciones
             opciones_menu = [
                 ("Salir", "Cierra el programa."),
                 ("Histograma", "Ver distribución de 1 variable."),
@@ -461,9 +466,10 @@ gdf_argentina = cargar_mapa_ign()
                 ("Scatter con Color", "Correlación pintada por grupo."),
                 ("Boxplot Premium", "Comparar Categórica vs Numérica."),
                 ("Gráfico de Barras", "Comparar Promedios entre Grupos."),
-                ("Gráfico de Líneas", "Ver Tendencia continua.")
+                ("Gráfico de Líneas", "Ver Tendencia continua."),
+                ("MAPA ARGENTINA", "Ver mapa geográfico."), # <--- AGREGAR
             ]
-            opcion = listar_y_elegir(opciones_menu, "¿Qué gráfico querés hacer?")                     # Minimiza error humano
+            opcion = listar_y_elegir(opciones_menu, "¿Qué gráfico querés hacer?")                           # Minimiza error humano
             
             if opcion == "Salir": break                                                                # Si elige salir [0], BREAK
             
@@ -483,14 +489,13 @@ gdf_argentina = cargar_mapa_ign()
                 
                 df_temp = df_full.copy()
                 if cg in df_clean.columns: 
-                    df_temp[cg] = df_clean[cg] # <--- CAMBIO CLAVE: df_clean
+                    df_temp[cg] = df_clean[cg] # <---  df_clean
                 graficar_estilo_premium(df_temp, cx, cy, col_grupo=cg, estilo=3)
             
             elif "Boxplot" in opcion:
                 cols_cat_orig = [c for c in df_clean.columns if c in v_cat]
                 cx = listar_y_elegir(cols_cat_orig, "Categórica (Eje X)")
-                cy = listar_y_elegir(["probabilidad_voto", "imagen_candidato", "edad"], "Numérica
-(Eje Y)")
+                cy = listar_y_elegir(["probabilidad_voto", "imagen_candidato", "edad"], "Numérica (Eje Y)")
                 
                 df_temp = df_full.copy()
                 df_temp[cx] = df_clean[cx] # <--- CAMBIO CLAVE: df_clean
@@ -505,7 +510,7 @@ gdf_argentina = cargar_mapa_ign()
                 df_temp[cx] = df_clean[cx] # <--- CAMBIO CLAVE: df_clean
                 graficar_estilo_premium(df_temp, cx, cy, estilo=5)
 
-df_temp = df_full.copy()
+                df_temp = df_full.copy()
                 df_temp[cx] = df_raw[cx]
                 graficar_estilo_premium(df_temp, cx, cy, estilo=5)
             
@@ -514,21 +519,20 @@ df_temp = df_full.copy()
                 cy = listar_y_elegir(["probabilidad_voto", "imagen_candidato"], "Variable (Eje Y)")    #Y(x)=promedio de todos los Y donde la variable X = x
                 graficar_estilo_premium(df_full, cx, cy, estilo=6)
 
-# ... dentro del while True ...
             
             if "MAPA" in opcion:  # Verificamos que la variable exista y tenga datos
                 if 'gdf_argentina' in locals() and gdf_argentina is not None:
                     
                 lista_vip = [col_target, "probabilidad_voto"]
                     
-                 resto = [c for c in vars_disp if df_full[c].dtype != 'object' and c not in lista_vip]
+                resto = [c for c in vars_disp if df_full[c].dtype != 'object' and c not in lista_vip]
                     
-                    opciones_mapa = lista_vip + resto                     #Unimos las listas para el menú
+                opciones_mapa = lista_vip + resto                     #Unimos las listas para el menú
 
-                    col = listar_y_elegir(opciones_mapa, "Variable para el mapa")
-                    graficar_estilo_premium(df_full, col, estilo=7, gdf_mapa=gdf_argentina)
-                else:
-                    print("⚠️ Error: No se cargó el mapa (variable gdf_argentina vacía).")
+                col = listar_y_elegir(opciones_mapa, "Variable para el mapa")
+                graficar_estilo_premium(df_full, col, estilo=7, gdf_mapa=gdf_argentina)
+            else:
+                    print("Error: No se cargó el mapa (variable gdf_argentina vacía).")
 
     except Exception as e:
         print(f"\n Error Inesperado: {e}")
