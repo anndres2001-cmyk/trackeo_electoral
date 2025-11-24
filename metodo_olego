@@ -98,7 +98,8 @@ vars_txt = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]
 
 # Crea una lista que contiene los nombres estandarizados de todas las variables categóricas que necesitan una limpieza especial.
 
-    for col in vars_txt:                                                                                        ## Recorremos una por una todas esas columnas. Inicia un bucle que iterará sobre cada nombre de columna en la lista vars_txt.
+    for col in vars_txt:                                                                                        # Recorremos una por una todas esas columnas. Inicia un bucle que iterará sobre cada nombre de columna en la lista vars_txt
+
         if col in df.columns:                                                                                    ## verificamos que la columna exista realmente en el DataFrame.
             df[col] = df[col].astype(str).str.strip().str.lower().replace(["nan", "none", "null", "", " "], np.nan) ##las estandariza y al resto las vuelve NaN
 
@@ -110,14 +111,30 @@ vars_txt = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]
     criticas = ["fecha", "encuesta", "integrantes_h", "imagen_candidato", "voto", "voto_anterior"]              # # Si falta fecha, voto o imagen, la encuesta no sirve. Se elimina la fila.
     criticas_reales = [c for c in criticas if c in df.columns]                                                  # Filtramos solo las que existen en "criticas" a "critical_reales"
     
-    n_antes = len(df)                                                                                           ## guardamos las filas en una variable n_antes , antes de eliminarlas
+    n_antes = len(df)                                                                                           # guardamos las filas en una variable n_antes , antes de eliminarlas
     df = df.dropna(subset=criticas_reales)                                                                       # Drop NaN (Borrar Nulos). Elimina filas inservibles: sin fecha, sin voto, sin imagen, etc.
     print(f"Se eliminaron {n_antes - len(df)} filas por falta de datos")
 
     if "imagen_candidato" in df.columns: df["imagen_candidato"] = df["imagen_candidato"].clip(0, 100)            # si la imagen del candidato existe entonces las ajustamos a 0 o 100 si pasa alguna de las dos. Función Clip. f(x) = min(max(x, 0), 100).
     
+# --- AGREGADO MAPAS: Traductor Estrato -> Mapa ---
+    if "estrato" in df.columns:   # Limpieza base
+        df["estrato"] = df["estrato"].str.lower().str.strip()  # Diccionario para unificar tus nombres con el IGN
+        dicc_ign = {
+            "primer cordon": "provincia de buenos aires", "segundo cordon": "provincia de buenos aires",
+            "tercer cordon": "provincia de buenos aires", "conurbano": "provincia de buenos aires",
+            "capital federal": "caba", "capital": "caba",
+            "cordoba": "provincia de córdoba", "tucuman": "provincia de tucumán",
+            "entre rios": "provincia de entre ríos", "neuquen": "provincia del neuquén",
+            "rio negro": "provincia de río negro", "misiones": "provincia de misiones",
+            "chaco": "provincia del chaco", "corrientes": "provincia de corrientes"
+                    }
+        df["estrato_mapa"] = df["estrato"].replace(dicc_ign)
+        mask = ~df["estrato_mapa"].str.contains("provincia", na=False) & (df["estrato_mapa"]!="caba")
+        df.loc[mask, "estrato_mapa"] = "provincia de " + df.loc[mask, "estrato_mapa"]
+
     return df
-def unificar_sexo(df):                                                                                          ## vamos a detectar las columnas de sexo y sus derivados: generando sexo_mas_unificado y sexo_fem_unificado
+def unificar_sexo(df):                                                                                          # vamos a detectar las columnas de sexo y sus derivados: generando sexo_mas_unificado y sexo_fem_unificado
     df_out = df.copy() ## Busca todas las columnas que empiecen con 'sexo_'
     cols_sexo = [c for c in df_out.columns if c.startswith("sexo_")]                                       #buscamos todas las columnas que empiecen por sexo
     cols_fem = [c for c in cols_sexo if "fem" in c or "mujer" in c or c.endswith("_f")]                   #filtramos por palabras claves entre los "sexo"
@@ -132,7 +149,7 @@ def unificar_sexo(df):                                                          
     return df_out
 
 def imputar_datos(df_limpio):                                                                       # ahora que tenemos las columnas vamos a IMPUTAR con MICE que utiiliza las relaciones matematicas entre variables para estimar los valores faltantes.
-    df = df_limpio.copy()                                                                          ## hacemos una copia del DF
+    df = df_limpio.copy()                                                                          # hacemos una copia del DF
     cols_cat = [c for c in ["estrato", "sexo", "nivel_educativo"] if c in df.columns]               # Elegimos qué variables categóricas vamos a usar para ayudar a la predicción.
     if "voto" in df.columns: df = pd.get_dummies(df, columns=["voto"], dummy_na=False)               ## # BINARIZAMOS "voto" y "voto_anterior"(One-Hot Encoding) para que el modelo 'vea' a quién vota la gente. # y use eso para predecir su estrato/edad faltante.
     if "voto_anterior" in df.columns: df = pd.get_dummies(df, columns=["voto_anterior"], dummy_na=False)
@@ -339,6 +356,11 @@ if __name__ == "__main__":                                                      
         df_full = imputar_datos(df_clean) # Rellena datos faltantes con IA.
         df_full = unificar_sexo(df_full)  # Arregla dummies de sexo.
         
+gdf_argentina = cargar_mapa_ign() 
+
+    if "estrato_mapa" in df_clean.columns: 
+            df_full["estrato_mapa"] = df_clean["estrato_mapa"]
+
         # 2. SELECCIÓN DE OBJETIVO (A QUIÉN QUEREMOS PREDECIR)  # filtra columnas que sean de voto actual.
         cols_voto = [c for c in df_full.columns if "voto_" in c and "anterior" not in c] # agarra todas las columnas de voto actual (voto_a, voto_b, voto_c, etc.). Descarta las de voto anterior.
         col_target = listar_y_elegir(cols_voto, "¿A quien queres trackear?") # Muestra menú interactivo y el usuario elige qué candidato quiere modelar.
@@ -482,12 +504,31 @@ if __name__ == "__main__":                                                      
                 df_temp = df_full.copy()
                 df_temp[cx] = df_clean[cx] # <--- CAMBIO CLAVE: df_clean
                 graficar_estilo_premium(df_temp, cx, cy, estilo=5)
-                
+
+df_temp = df_full.copy()
+                df_temp[cx] = df_raw[cx]
+                graficar_estilo_premium(df_temp, cx, cy, estilo=5)
             
             elif "Líneas" in opcion:                                                                 #(Técnicamente una regresión no paramétrica muy simple)
                 cx = listar_y_elegir(["edad", "integrantes_h"], "Variable Continua (Eje X)")
                 cy = listar_y_elegir(["probabilidad_voto", "imagen_candidato"], "Variable (Eje Y)")    #Y(x)=promedio de todos los Y donde la variable X = x
                 graficar_estilo_premium(df_full, cx, cy, estilo=6)
+
+# ... dentro del while True ...
+            
+            if "MAPA" in opcion:  # Verificamos que la variable exista y tenga datos
+                if 'gdf_argentina' in locals() and gdf_argentina is not None:
+                    
+                lista_vip = [col_target, "probabilidad_voto"]
+                    
+                 resto = [c for c in vars_disp if df_full[c].dtype != 'object' and c not in lista_vip]
+                    
+                    opciones_mapa = lista_vip + resto                     #Unimos las listas para el menú
+
+                    col = listar_y_elegir(opciones_mapa, "Variable para el mapa")
+                    graficar_estilo_premium(df_full, col, estilo=7, gdf_mapa=gdf_argentina)
+                else:
+                    print("⚠️ Error: No se cargó el mapa (variable gdf_argentina vacía).")
 
     except Exception as e:
         print(f"\n Error Inesperado: {e}")
