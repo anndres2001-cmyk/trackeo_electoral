@@ -161,30 +161,53 @@ def imputar_datos(df_limpio):                                                   
 def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1):    # ahora GRAFICOS usando matplotlib. DF: tabla de graficos. col x/ col_y
     plt.style.use('seaborn-v0_8-whitegrid')                                      # configuramos estética (fondo blanco con grilla suave).
     
-    if estilo == 1:                                                              # 1- vamos a dar la opcion de elegir el grafico: histograma
-        variable = df[col_x]
-        plt.figure(figsize=(8, 5))
-        plt.hist(variable, bins=20, edgecolor="black", color="#69b3a2", alpha=0.8) # bins= divide el rango de datos en 20 cajones
-        plt.title(f"Distribución de {col_x}", fontsize=14, fontweight='bold')
-        plt.ylabel("Cantidad de Casos"); plt.xlabel(col_x)
+    if estilo == 1: # Histograma con la mediana
+        variable = df[col_x].dropna() # Limpiamos los nulos para evitar errores
+        mediana = variable.median()
+        
+        plt.figure(figsize=(10, 6))
+        plt.hist(variable, bins=20, edgecolor="black", color="#69b3a2", alpha=0.7, label="Frecuencia")
+        plt.axvline(mediana, color='#d62728', linestyle='dashed', linewidth=2, label=f'Mediana: {mediana:.1f}') 
+        plt.title(f"Distribución de {col_x}", fontsize=15, fontweight='bold')
+        plt.ylabel("Cantidad de Casos")
+        plt.xlabel(col_x)
+        plt.legend() # Muestra la etiqueta de la mediana
+        plt.grid(axis='y', alpha=0.3)
         plt.tight_layout(); plt.show()
 
-    elif estilo == 2 and col_y:                                                 # 2- scatter
-        plt.figure(figsize=(8, 5))
-        plt.scatter(df[col_x], df[col_y], alpha=0.5, color="#4c72b0")          # Plotea puntos (x, y) en el plano cartesiano.
-        plt.title(f"Correlación: {col_x} vs {col_y}", fontsize=14, fontweight='bold')
+   elif estilo == 2 and col_y: # Scatter con Línea de Tendencia
+        # Limpiamos datos para cálculo matemático
+        data = df[[col_x, col_y]].dropna()
+        x = data[col_x]
+        y = data[col_y]
+        plt.figure(figsize=(10, 6))
+        plt.scatter(x, y, alpha=0.5, color="#4c72b0", label="Casos")
+        # CÁLCULO DE TENDENCIA (y = mx + b)
+        if len(x) > 1:
+            m, b = np.polyfit(x, y, 1) # Ajuste lineal
+            plt.plot(x, m*x + b, color='#d62728', linewidth=2, label=f'Tendencia')
+        plt.title(f"Correlación: {col_x} vs {col_y}", fontsize=15, fontweight='bold')
         plt.xlabel(col_x); plt.ylabel(col_y)
+        plt.legend()
         plt.tight_layout(); plt.show()
 
-    elif estilo == 3 and col_y and col_grupo:
-        grupos = df[col_grupo].unique()
-        colores = plt.cm.tab10(np.linspace(0, 1, len(grupos)))  # Crea una paleta de colores matemáticamente espaciada
-        mapa = {g: colores[i] for i, g in enumerate(grupos)} # Asigna color a grupo.
-        plt.figure(figsize=(9, 5))
-        plt.scatter(df[col_x], df[col_y], c=[mapa[g] for g in df[col_grupo]], alpha=0.6)   # Dibuja los puntos asignando el color según el mapa.
-        for k, v in mapa.items(): plt.scatter([], [], c=[v], label=k)                    # Truco para la leyenda: Dibuja puntos invisibles para etiquetarlos.
-        plt.title(f"{col_x} vs {col_y} (según {col_grupo})", fontsize=14, fontweight='bold')
-        plt.legend(title=col_grupo); plt.tight_layout(); plt.show()
+  elif estilo == 3 and col_y and col_grupo: # Scatter con Centroides
+        grupos = df[col_grupo].dropna().unique()
+        colores = plt.cm.tab10(np.linspace(0, 1, len(grupos)))
+        mapa_col = {g: colores[i] for i, g in enumerate(grupos)}
+        plt.figure(figsize=(11, 7))
+        # 1. Dibujamos los puntos (Fondo)
+        for g in grupos:
+            subset = df[df[col_grupo] == g]
+            plt.scatter(subset[col_x], subset[col_y], c=[mapa_col[g]], alpha=0.3, s=30) # Puntos chicos y transparentes
+            # 2. Dibujamos el CENTROIDE (Punto Gordo Promedio)
+            centro_x = subset[col_x].mean()
+            centro_y = subset[col_y].mean()
+            plt.scatter(centro_x, centro_y, c=[mapa_col[g]], s=200, edgecolor='black', marker='X', label=f"{g} (Promedio)")
+        plt.title(f"Segmentación: {col_x} vs {col_y} por {col_grupo}", fontsize=15, fontweight='bold')
+        plt.xlabel(col_x); plt.ylabel(col_y)
+        plt.legend(title="Promedios por Grupo", bbox_to_anchor=(1.05, 1), loc='upper left') # Leyenda afuera
+        plt.tight_layout(); plt.show()
 
     elif estilo == 4 and col_y:                                                      # Boxplot
         orden = sorted(df[col_x].unique().astype(str))         # Ordena las categorías del eje X alfabéticamente.
