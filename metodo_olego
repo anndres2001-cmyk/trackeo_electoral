@@ -145,7 +145,7 @@ def imputar_datos(df_limpio):                                                   
     cols_si = [c for c in df_encoded.columns if c not in ["fecha", "encuesta"]]    # celeccionamos todas las columnas numéricas excepto los IDs y Fechas (que no tienen correlación matemática útil).
     if cols_si:
         try:    #Abre bloque seguro para ejecutar el imputador sin romper el programa si falla.
-            df_encoded[cols_si] = imputer.fit_transform(df_encoded[cols_si])     ## ajusta regresiones internas y rellena todos los valores faltantes. El imputador devuelve una matriz numérica completa y la
+            df_encoded[cols_si] = imputer.fit_transform(df_encoded[cols_si])     ## ajusta regresiones internas y rellena todos los valores faltantes. El imputador devuelve una matriz numérica completa
             if "edad" in df_encoded.columns: df_encoded["edad"] = df_encoded["edad"].round().astype(int) # Si la columna “edad” existe luego del proceso entonces redondeo: La edad estimada puede ser 34.6 años -> pasamos a 35.
         except: 
             pass # si falla (ej: matriz vacía), devolvemos como estaba.
