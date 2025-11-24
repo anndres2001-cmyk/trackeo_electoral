@@ -10,6 +10,27 @@ from sklearn.impute import IterativeImputer                # El algoritmo MICE p
 from sklearn.linear_model import LinearRegression          # Usado por MICE para adivinar números.
 from sklearn.linear_model import LogisticRegression        # Usado para predecir Voto (Sí/No).
 
+# --- AGREGADO MAPAS ---
+def cargar_mapa_ign():
+    print("Cargando mapa 'provincias.json'...") #función para buscar el archivo provincia.json en la carpeta -> datos de las IGN
+
+    try:
+        gdf = gpd.read_file("provincias.json")   # Normalizamos nombre del mapa
+        col_nom = next((c for c in gdf.columns if c.lower() in ['nam','fna','nombre']), None)
+
+        if col_nom:	#Normaliza nombre de columnas
+            gdf['geo_key'] = gdf[col_nom].astype(str).str.strip().str.lower() #se crea un nuevo diccionario con columnas que normaliza todo y permite concatenar los estratos.
+
+            gdf['geo_key'] = gdf['geo_key'].replace({
+                'ciudad autónoma de buenos aires': 'caba', 'capital federal': 'caba',
+                'tierra del fuego, antártida e islas del atlántico sur': 'tierra del fuego'
+            })
+
+            return gdf # finaliza la ejecución de la función y devuelve el dt limpio 
+
+    except: pass
+    return None
+
 ### SELECCIONAR CANDIDATO
 
 def listar_y_elegir(lista_opciones, mensaje="Seleccioná una opción"): #de forma numerica elegimos al candidato a traves de la funcion "listar_y_elegir". recibe una lista de opciones y un mensaje opcional que se muestra como título del menú.
