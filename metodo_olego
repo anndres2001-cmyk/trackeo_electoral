@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt   # librería base para graficar (Ejes, Figuras)
 import matplotlib.ticker as mtick # herramienta para formatear ejes (ej: poner el signo %).
 import os                         # "Operating System". Permite crear carpetas y guardar archivos en tu PC.
 import geopandas as gpd
+import seaborn as sns
 
 os.environ["OGR_GEOJSON_MAX_OBJ_SIZE"] = "0"  #Le pedimos al sistema que confíe y cargue el archivo de IGN completo por más pesado que sea.
 
