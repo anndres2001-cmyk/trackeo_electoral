@@ -94,7 +94,10 @@ def preparar_base(df_raw): #vamos a usar el CSV como base cruda #vamos a normali
         raise ValueError("ERROR: faltan columnas obligatorias en el CSV.")
 
     df = df.rename(columns=col_map) # aplica los renombres definidos en col_map. ACA SE ESTANDARIZAN las variables para el resto del pipeline.
-vars_txt = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]                                  ## Crea una lista que contiene los nombres estandarizados de todas las variables categóricas que necesitan una limpieza especial.
+vars_txt = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]                                  
+
+# Crea una lista que contiene los nombres estandarizados de todas las variables categóricas que necesitan una limpieza especial.
+
     for col in vars_txt:                                                                                        ## Recorremos una por una todas esas columnas. Inicia un bucle que iterará sobre cada nombre de columna en la lista vars_txt.
         if col in df.columns:                                                                                    ## verificamos que la columna exista realmente en el DataFrame.
             df[col] = df[col].astype(str).str.strip().str.lower().replace(["nan", "none", "null", "", " "], np.nan) ##las estandariza y al resto las vuelve NaN
