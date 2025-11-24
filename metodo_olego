@@ -291,4 +291,29 @@ if __name__ == "__main__":                                                      
                 print(f"⚠️ AVISO: No se pudo guardar '{col}' por caracteres inválidos.")
         
         print(f"T M A P  -> Archivos guardados en carpeta 'archivos_tracking'.")
+        # 5. MENÚ INTERACTIVO DE GRÁFICOS
+        vars_disp = [c for c in df_full.columns if c not in ["fecha", "encuesta"]]             ## Quita columnas que no sirven para gráficos estadísticos.
+        v_num = [c for c in vars_disp if df_full[c].nunique() > 5]  # Numéricas (muchos valores). ## Sirve para SCATTER, HISTOGRAMAS, LINEAS, REGRESION VISUAL
+       # CORRECCIÓN: Definimos las categóricas explícitamente buscando en df_clean
+        # Esto asegura que aparezcan "estrato", "sexo", "nivel_educativo"
+        posibles_cat = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]
+        v_cat_reales = [c for c in posibles_cat if c in df_clean.columns] # Categóricas (pocos valores). ## Sirve para BOXPLOT, BARRAS, COMPARACIONES POR GRUPO
+
+        while True:                                                                               ## CONTINUA EL MENU INTERACTIVO con los nombres de las opciones
+            opciones_menu = [
+                ("Salir", "Cierra el programa."),
+                ("Histograma", "Ver distribución de 1 variable."),
+                ("Scatter Simple", "Correlación entre 2 variables numéricas."),
+                ("Scatter con Color", "Correlación pintada por grupo."),
+                ("Boxplot Premium", "Comparar Categórica vs Numérica."),
+                ("Gráfico de Barras", "Comparar Promedios entre Grupos."),
+                ("Gráfico de Líneas", "Ver Tendencia continua.")
+            ]
+            opcion = listar_y_elegir(opciones_menu, "¿Qué gráfico querés hacer?")                     # Minimiza error humano
+            
+            if opcion == "Salir": break                                                                # Si elige salir [0], BREAK
+            
+            # Lógica de ruteo: según la opción, llama a la función graficar con los parámetros correctos.
+            if "Histograma" in opcion:                                                                 #Le pide al usuario elegir una variable (numérica).
+                graficar_estilo_premium(df_full, listar_y_elegir(vars_disp, "Variable"), estilo=1)     # Llama a la función graficar_estilo_premium con estilo=1. Histograma = Frecuencia absoluta por intervalo
 
