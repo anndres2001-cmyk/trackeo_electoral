@@ -201,23 +201,86 @@ def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1):   
             
         plt.title(f"{col_y} por {col_x}", fontsize=14, fontweight='bold')
         plt.grid(axis='y', alpha=0.3); plt.tight_layout(); plt.show()
- elif estilo == 5 and col_y:                                                   # --- ESTILO 5: BARRAS (Comparación de Medias) ---
-        data_agg = df.groupby(col_x)[col_y].mean().sort_index()                          # Agregación: Agrupa por X y calcula el Promedio (mean) de Y.
-        plt.figure(figsize=(10, 5))
-        ax = data_agg.plot(kind='bar', color="#c44e52", alpha=0.9, edgecolor='black')
-        plt.title(f"Promedio de {col_y} según {col_x}", fontsize=14, fontweight='bold')
-        plt.ylabel(f"Promedio de {col_y}"); plt.xticks(rotation=45)
-        
-        if "probabilidad" in col_y or "imagen" in col_y:                                   # Formato Porcentaje: Si detecta probabilidad, multiplica por 100 y pone %.
-            ax.yaxis.set_major_formatter(mtick.PercentFormatter(100 if data_agg.max()>1 else 1.0, decimals=0))
-        plt.grid(axis='y', linestyle='--'); plt.tight_layout(); plt.show()
 
-    elif estilo == 6 and col_y:                                                        # --- ESTILO 6: LÍNEAS (Tendencias) ---
-        data_agg = df.groupby(col_x)[col_y].mean().sort_index()                                    # Agregación por promedio.
-        plt.figure(figsize=(10, 5))
-        ax = data_agg.plot(kind='line', marker='o', linewidth=3, color="#8172b3")
-        plt.title(f"Tendencia: {col_y} al variar {col_x}", fontsize=14, fontweight='bold')
-        plt.ylabel(col_y); plt.grid(True, linestyle='--', alpha=0.5); plt.tight_layout(); plt.show()
+elif estilo == 5 and col_y:                                                             # 5. BARRAS
+        resumen = df.groupby(col_x)[col_y].agg(['mean', 'std', 'count']).sort_index()       # calculamos Promedio (mean) Y Desvío Estándar (std) al mismo tiempo
+        resumen['se'] = resumen['std'] / np.sqrt(resumen['count'])                          # Calculamos el error estándar (para el intervalo de confianza básico)
+        plt.figure(figsize=(12, 6))
+        
+        ax = resumen['mean'].plot(kind='bar', yerr=resumen['se'], capsize=5,               # 2. Dibujamos con yerr (Y-Error) que son los "bigotes" negros                              # capsize=5 pone los techitos en los bigotes
+                                  color="#c44e52", alpha=0.9, edgecolor='black', rot=45)
+
+        plt.title(f"Promedio de {col_y} por {col_x} (con error estándar)", fontsize=15, fontweight='bold')
+        plt.ylabel(f"Promedio estimado")
+        plt.grid(axis='y', linestyle='--', alpha=0.3)
+
+        for p in ax.patches:                                                                  # recorre y coloca una etiqueta de Valor encima de las barras
+            ax.annotate(f"{p.get_height():.1f}",                                              # Escribimos el número formateado (ej: 45.2) arriba de la barra
+                        (p.get_x() + p.get_width() / 2., p.get_height()), 
+                        ha='center', va='bottom', xytext=(0, 5), 
+                        textcoords='offset points', fontweight='bold')
+
+        plt.tight_layout()
+        plt.show()
+
+   elif estilo == 6 and col_y:                                                              # 6. LÍNEAS. perfecto para mostrar tendencias, evoluciones o comportamientos. por ejemplo, cuanto cambia la probabilidad de voto dependiendo de alguna situacion del encuestado
+        data_agg = df.groupby(col_x)[col_y].mean().sort_index()                              # Agregación por promedio.
+        plt.figure(figsize=(12, 6))
+        plt.plot(data_agg.index, data_agg.values, marker='o', markersize=8,                   # dibujamos la línea (más gruesa y con marcadores sólidos)
+                 linewidth=3, color="#4c72b0", label=col_y)
+        for x, y in zip(data_agg.index, data_agg.values):                                     # scribir el valor en cada punto
+
+            texto = f"{y:.1f}%" if y > 1 else f"{y:.2f}"                                     # Formato: si es chico (0.45) lo muestra como porcentaje, si es grande (45) como entero
+            if "probabilidad" in col_y or "imagen" in col_y: 
+                 texto = f"{y:.1f}%" # Forzamos % si es probabilidad
+
+            plt.annotate(texto, 
+                         (x, y), 
+                         textcoords="offset points", 
+                         xytext=(0, 10), # 10 pixeles arriba del punto
+                         ha='center', 
+                         fontweight='bold',
+                         fontsize=10,
+                         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8)) 
+                         # La cajita blanca de fondo para que se lea siempre
+
+        plt.title(f"Evolución: {col_y} según {col_x}", fontsize=16, fontweight='bold')
+        plt.ylabel("Valor Promedio")
+        plt.grid(True, linestyle='--', alpha=0.3) # Grilla muy suave
+        plt.tight_layout()
+        plt.show()
+
+elif estilo == 7 and gdf_mapa is not None:                                             # 7. MAPA
+
+        print(f"Generando mapa para: {col_x}")
+
+        if "estrato_mapa" not in df.columns:
+            print("No existe columna 'estrato_mapa'.")
+            return
+        
+        # Promedios por provincia
+        datos = df.groupby("estrato_mapa")[col_x].agg(["mean", "count"]).reset_index()
+        datos.rename(columns={"mean": "valor_medio", "count": "n"}, inplace=True)
+
+        # Unimos con el shapefile
+        final = gdf_mapa.merge(datos, left_on="geo_key", right_on="estrato_mapa", how="left")
+        print("\nPequeño diagnóstico territorial previo al mapa")
+        print("------------------------------------------")
+
+        datos_validos = datos.dropna(subset=["valor_medio"])
+
+        # Top 3
+        top3 = datos_validos.sort_values("valor_medio", ascending=False).head(3)
+        print("\n3 provincias con mayor valor promedio:")
+        print(top3[["estrato_mapa", "valor_medio", "n"]].to_string(index=False))
+
+        # Bottom 3
+        bottom3 = datos_validos.sort_values("valor_medio").head(3)
+        print("\n3 provincias con menor valor promedio:")
+        print(bottom3[["estrato_mapa", "valor_medio", "n"]].to_string(index=False))
+
+        # Gráfico del mapa mejorado
+        fig, ax = plt.subplots(1, 1, figsize=(10, 12))
 
 # Ejecucucion
 if __name__ == "__main__":                                                             # Garantiza que el código SOLO se ejecuta si corrés el archivo directamente (no si lo importás).
