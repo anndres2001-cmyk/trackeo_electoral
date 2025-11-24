@@ -317,3 +317,24 @@ if __name__ == "__main__":                                                      
             if "Histograma" in opcion:                                                                 #Le pide al usuario elegir una variable (numérica).
                 graficar_estilo_premium(df_full, listar_y_elegir(vars_disp, "Variable"), estilo=1)     # Llama a la función graficar_estilo_premium con estilo=1. Histograma = Frecuencia absoluta por intervalo
 
+
+            elif "Scatter Simple" in opcion:                                                                 #
+                graficar_estilo_premium(df_full, listar_y_elegir(v_num, "Eje X"), listar_y_elegir(v_num, "Eje Y"), estilo=2) #una variable para X #una variable para Y #Grupo para colorear
+            
+            elif "Scatter con Color" in opcion:
+                # CORRECCIÓN: Usamos df_clean para buscar las etiquetas de texto originales
+                cols_color = [c for c in df_clean.columns if c in v_cat] + [c for c in df_full.columns if "sexo_" in c]
+                cx = listar_y_elegir(v_num, "Eje X"); cy = listar_y_elegir(v_num, "Eje Y")
+                cg = listar_y_elegir(cols_color, "Color (Grupo)")
+                
+                df_temp = df_full.copy()
+                if cg in df_clean.columns: 
+                    df_temp[cg] = df_clean[cg] # <--- CAMBIO CLAVE: df_clean
+                graficar_estilo_premium(df_temp, cx, cy, col_grupo=cg, estilo=3)
+            
+            elif "Boxplot" in opcion:
+                cols_cat_orig = [c for c in df_clean.columns if c in v_cat]
+                cx = listar_y_elegir(cols_cat_orig, "Categórica (Eje X)")
+                cy = listar_y_elegir(["probabilidad_voto", "imagen_candidato", "edad"], "Numérica
+
+
