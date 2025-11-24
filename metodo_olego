@@ -3,6 +3,9 @@ import numpy as np                # cálculo numérico, maneja vectores y matric
 import matplotlib.pyplot as plt   # librería base para graficar (Ejes, Figuras).
 import matplotlib.ticker as mtick # herramienta para formatear ejes (ej: poner el signo %).
 import os                         # "Operating System". Permite crear carpetas y guardar archivos en tu PC.
+import geopandas as gpd
+
+os.environ["OGR_GEOJSON_MAX_OBJ_SIZE"] = "0"  #Le pedimos al sistema que confíe y cargue el archivo de IGN completo por más pesado que sea.
 
 # Librerías de Inteligencia Artificial (Scikit-Learn)
 from sklearn.experimental import enable_iterative_imputer  # Habilita el MICE (aún es experimental en sklearn).
