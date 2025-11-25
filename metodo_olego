@@ -176,7 +176,7 @@ def imputar_datos(df_limpio):                                                   
     return df_encoded
 
 def aplicar_ponderacion(df, archivo_censo, col_variable):
-    print(f"\n--- INICIANDO PONDERACIÓN POR: {col_variable.upper()} ---")
+    print(f"\nINICIANDO PONDERACIÓN POR: {col_variable.upper()}")
     
     # 1. Cargamos la verdad (Censo)
     try:
@@ -202,7 +202,7 @@ def aplicar_ponderacion(df, archivo_censo, col_variable):
             weights_map[cat] = peso
             print(f"   > {cat}: Muestra {prop_muestra:.2f} vs Real {prop_real:.2f} -> Peso: {peso:.2f}")
         else:
-            print(f"   ⚠ Cuidado: La categoría '{cat}' está en el Censo pero NO en tu encuesta.")
+            print(f" Cuidado: La categoría '{cat}' está en el Censo pero NO en tu encuesta.")
             weights_map[cat] = 1.0 # Neutro
             
     # 3. Aplicamos el peso a cada fila
