@@ -14,49 +14,44 @@ from sklearn.impute import IterativeImputer                # El algoritmo MICE p
 from sklearn.linear_model import LinearRegression          # Usado por MICE para adivinar números.
 from sklearn.linear_model import LogisticRegression        # Usado para predecir Voto (Sí/No).
 
-#CARGAMOS MAPA
-def cargar_mapa_ign():
-    print("Cargando mapa 'provincias.json'...") #función para buscar el archivo provincia.json en la carpeta -> datos de las IGN
-
+def cargar_mapa_ign():                             ##funcion para buscar el archivo provincia.json en la carpeta -> datos de las IGN
+    print("Cargando mapa 'provincias.json'...")
     try:
-        gdf = gpd.read_file("provincias.json")   # Normalizamos nombre del mapa
-        col_nom = next((c for c in gdf.columns if c.lower() in ['nam','fna','nombre']), None)
-
-        if col_nom:	#Normaliza nombre de columnas
-            gdf['geo_key'] = gdf[col_nom].astype(str).str.strip().str.lower() #se crea un nuevo diccionario con columnas que normaliza todo y permite concatenar los estratos.
-
+        gdf = gpd.read_file("provincias.json")
+        col_nom = next((c for c in gdf.columns if c.lower() in ['nam','fna','nombre']), None)  #normaliza las columnas del archivo
+        if col_nom:
+            gdf['geo_key'] = gdf[col_nom].astype(str).str.strip().str.lower()   #los estratos SE PUEDEN CAMBIAR
             gdf['geo_key'] = gdf['geo_key'].replace({
                 'ciudad autónoma de buenos aires': 'caba', 'capital federal': 'caba',
                 'tierra del fuego, antártida e islas del atlántico sur': 'tierra del fuego'
             })
-
-            return gdf # finaliza la ejecución de la función y devuelve el dt limpio 
-
+            return gdf                                                           # finaliza la ejecución de la función y devuelve el dt limpio
     except: pass
     return None
+
 
 ### SELECCIONAR CANDIDATO
 
 def listar_y_elegir(lista_opciones, mensaje="Seleccioná una opción"): #de forma numerica elegimos al candidato a traves de la funcion "listar_y_elegir". recibe una lista de opciones y un mensaje opcional que se muestra como título del menú.
-    print(f"\n--- {mensaje} ---")                  # Imprime el título del menú.
-    for i, op in enumerate(lista_opciones):       # Recorre la "lista_opciones" con enumarate(), indexando el conjunto de opciones (0, 1, 2...).
-        if isinstance(op, tuple):                 # Si es tupla muestra solo el nombre
+    print(f"\n--- {mensaje} ---")                 # imprime el título del menú.
+    for i, op in enumerate(lista_opciones):       # recorre la "lista_opciones" con enumarate(), indexando el conjunto de opciones (0, 1, 2...).
+        if isinstance(op, tuple):                 # si es tupla (Nombre, Descripción), muestra solo el NOMBRE
             print(f"[{i}] {op[0]}")               # ... muestra solo el primer nombre.
         else:
             print(f"[{i}] {op}")                  # sino, muestra la opción tal cual.
     
     while True:                                   # bucle infinito: no sale hasta que el usuario escriba bien (return)
         try:
-            inp = input("Ingrese el número: ")    # pide el dato al usuario.
+            inp = input("Ingresa el número: ")    # pide el dato al usuario.
             idx = int(inp)                        # Intenta convertir ese string a numero entero
             
-            if 0 <= idx < len(lista_opciones):    # Lógica Booleana: Verifica si el número está dentro del rango de la lista. #el indice dentro de a logica
+            if 0 <= idx < len(lista_opciones):    # Lógica Booleana: Verifica si el número está dentro del rango de la lista.   #el indice dentro de a logica
                 val = lista_opciones[idx]         # recuperando el objeto real de la lista.
                 return val[0] if isinstance(val, tuple) else val # Devuelve el valor limpio.
             
             print("EROR.")      # Si el número es muy alto o negativo.
         except ValueError:
-            print("ERROR. Por favor, escribime un numero válido.") # Si escribió letras en vez de números.
+            print("ERROR. Por favor, escribime un número válido.") # Si escribió letras en vez de números.
 
 # LIMPIEZA
 def preparar_base(df_raw): #vamos a usar el CSV como base cruda #vamos a normalizar los nombres de las columnas #eliminamos filas que no sirvan (sin fecha o voto)
@@ -68,20 +63,20 @@ def preparar_base(df_raw): #vamos a usar el CSV como base cruda #vamos a normali
     cols = df.columns                                     # Guarda la lista de nombres limpios.
     print("\nDIAGNÓSTICO DE COLUMNAS")
 
-    try:                                                                                                   # con "try" iniciamos un bloque que atrapará errores si falta alguna columna.
-        c_fecha = [c for c in cols if "fecha" in c or "date" in c or "time" in c][0]                       # busca columna que tenga "fecha", "date" o "time". Toma la primera [0].
+    try:                                                                                                                     # con "try" niciamos un bloque que atrapará errores si falta alguna columna.
+        c_fecha = [c for c in cols if "fecha" in c or "date" in c or "time" in c][0]                                       # busca columna que tenga "fecha", "date" o "time". Toma la primera [0].
         c_id = [c for c in cols if ("ident" in c or "id_" in c or "encuesta" in c) and "fecha" not in c][0] # usca ID: debe decir "id" o "encuesta" PERO NO "fecha" (Lógica: A y No B).
-        c_estrato_list = [c for c in cols if "estrato" in c or "socio" in c]                                # busca Estrato: puede no existir, por eso chequeamos si la lista está vacía al final.
-        c_estrato = c_estrato_list[0] if c_estrato_list else None                                           # busca posibles columnas de estrato; puede haber 0 o más.
-        c_sexo = [c for c in cols if "sexo" in c or "genero" in c][0]                                         
+        c_estrato_list = [c for c in cols if "estrato" in c or "socio" in c]                                                # busca Estrato: puede no existir, por eso chequeamos si la lista está vacía al final.
+        c_estrato = c_estrato_list[0] if c_estrato_list else None                                                           # busca posibles columnas de estrato; puede haber 0 o más.
+        c_sexo = [c for c in cols if "sexo" in c or "genero" in c][0]                                                            
         c_edad = [c for c in cols if "edad" in c or "anos" in c][0]
         c_educ = [c for c in cols if "educ" in c or "nivel" in c or "instruccion" in c][0]
         c_hogar = [c for c in cols if "integrantes" in c or "hogar" in c or "personas" in c][0]
         c_imagen = [c for c in cols if "imagen" in c][0]
-        c_voto = [c for c in cols if "voto" in c and "anterior" not in c][0]                                  # en caso de voto elegimos que no sea "anterior"
+        c_voto = [c for c in cols if "voto" in c and "anterior" not in c][0]                                                 # en caso de voto elegimos que no sea "anterior"
         c_voto_ant = [c for c in cols if "anterior" in c][0]
 
-        col_map = {                                                                                            #a las busquedas de nombres las pusimos dentro de un diccionario para poder integrarlas mejor y cambiarles el nombre
+        col_map = {                                                                                                          #a las busquedas de nombres las pusimos dentro de un diccionario para poder integrarlas mejor y cambiarles el nombre
             c_fecha: "fecha", c_id: "encuesta", c_sexo: "sexo", c_edad: "edad",
             c_educ: "nivel_educativo", c_hogar: "integrantes_h", c_imagen: "imagen_candidato",
             c_voto: "voto", c_voto_ant: "voto_anterior"
@@ -89,71 +84,73 @@ def preparar_base(df_raw): #vamos a usar el CSV como base cruda #vamos a normali
         if c_estrato: col_map[c_estrato] = "estrato" #solo renombra estrato si existe.
 
         print(f"Columnas identificadas")
-    except IndexError:                                                                                         # Si alguna lista [c for c...] quedó vacía, [0] significa que da ERROR, por lo tanto, que imprima error
+    except IndexError:                                                                                                       # Si alguna lista [c for c...] quedó vacía, [0] significa que da ERROR, por lo tanto, que imprima error
         raise ValueError("ERROR: faltan columnas obligatorias en el CSV.")
 
     df = df.rename(columns=col_map) # aplica los renombres definidos en col_map. ACA SE ESTANDARIZAN las variables para el resto del pipeline.
-    vars_txt = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]                                  
 
-# Crea una lista que contiene los nombres estandarizados de todas las variables categóricas que necesitan una limpieza especial.
+    vars_txt = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]          #categoricas                                     ## UNA VEZ las columnas esten limpias hay que limpiarlas, a las variables (string) cualuqier cosa reemplazamos por np.nan
 
-    for col in vars_txt:                                                                                        # Recorremos una por una todas esas columnas. Inicia un bucle que iterará sobre cada nombre de columna en la lista vars_txt
-
-        if col in df.columns:                                                                                    # verificamos que la columna exista realmente en el DataFrame.
+    # AHORA crea una lista que contiene los nombres estandarizados de todas las variables categóricas que necesitan una limpieza especial.
+    for col in vars_txt:                                       #comprueba si existe                                                       ## Recorremos una por una todas esas columnas.
+        if col in df.columns:                                                                                                ## verificamos que la columna exista realmente en el DataFrame.
             df[col] = df[col].astype(str).str.strip().str.lower().replace(["nan", "none", "null", "", " "], np.nan) ##las estandariza y al resto las vuelve NaN
 
-    vars_num = ["edad", "integrantes_h", "imagen_candidato"]                                                      # a las Variables numérica las forzamos a número. 'errors="coerce"' convierte errores en NaN (Vacío).
-    for col in vars_num:                                                                                         # Lista de columnas numéricas que pueden venir mal cargadas.
+    vars_num = ["edad", "integrantes_h", "imagen_candidato"]                                                          ## a las Variables numérica las forzamos a número. 'errors="coerce"' convierte errores en NaN (Vacío).
+    for col in vars_num:                                                                                                     ## Lista de columnas numéricas que pueden venir mal cargadas.
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    criticas = ["fecha", "encuesta", "integrantes_h", "imagen_candidato", "voto", "voto_anterior"]              # # Si falta fecha, voto o imagen, la encuesta no sirve. Se elimina la fila.
-    criticas_reales = [c for c in criticas if c in df.columns]                                                  # Filtramos solo las que existen en "criticas" a "critical_reales"
+    criticas = ["fecha", "encuesta", "integrantes_h", "imagen_candidato", "voto", "voto_anterior"]                           # # Si falta fecha, voto o imagen, la encuesta no sirve. Se elimina la fila.
+    criticas_reales = [c for c in criticas if c in df.columns]                                                               # Filtramos solo las que existen en "criticas" a "critical_reales"
     
-    n_antes = len(df)                                                                                           # guardamos las filas en una variable n_antes , antes de eliminarlas
-    df = df.dropna(subset=criticas_reales)                                                                       # Drop NaN (Borrar Nulos). Elimina filas inservibles: sin fecha, sin voto, sin imagen, etc.
+    n_antes = len(df)                                                                                                        ## guardamos las filas en una variable n_antes , antes de eliminarlas
+    df = df.dropna(subset=criticas_reales)                                                                                   # Drop NaN (Borrar Nulos). Elimina filas inservibles: sin fecha, sin voto, sin imagen, etc.
     print(f"Se eliminaron {n_antes - len(df)} filas por falta de datos")
 
-    if "imagen_candidato" in df.columns: df["imagen_candidato"] = df["imagen_candidato"].clip(0, 100)            # si la imagen del candidato existe entonces las ajustamos a 0 o 100 si pasa alguna de las dos. Función Clip. f(x) = min(max(x, 0), 100).
+    if "imagen_candidato" in df.columns: df["imagen_candidato"] = df["imagen_candidato"].clip(0, 100)                      ## CLIP (0, 100) img_candidato
+
+    # AGREGADO MAPAS
     
-#AGREGADO MAPAS:
-    if "estrato" in df.columns:   # Limpieza base
-        df["estrato"] = df["estrato"].str.lower().str.strip()  # Diccionario para unificar tus nombres con el IGN
-        dicc_ign = {
+    if "estrato" in df.columns:                                 #si el estrato en df.columns...
+        df["estrato"] = df["estrato"].str.lower().str.strip()  #limpiamos la columna estrato. 
+        
+        dicc_ign = {                                          # ciccionario para unificar tus nombres con el IGN
             "primer cordon": "provincia de buenos aires", "segundo cordon": "provincia de buenos aires",
             "tercer cordon": "provincia de buenos aires", "conurbano": "provincia de buenos aires",
             "capital federal": "caba", "capital": "caba",
-            "cordoba": "provincia de córdoba", "tucuman": "provincia de tucumán",
+            "cordoba": "provincia de córdoba", "tucuman": "provincia de tucumán",                            # El resto de provincias suelen coincidir si le agregas "provincia de " mentalmente
             "entre rios": "provincia de entre ríos", "neuquen": "provincia del neuquén",
             "rio negro": "provincia de río negro", "misiones": "provincia de misiones",
             "chaco": "provincia del chaco", "corrientes": "provincia de corrientes"
-                    }
-        df["estrato_mapa"] = df["estrato"].replace(dicc_ign)
-        mask = ~df["estrato_mapa"].str.contains("provincia", na=False) & (df["estrato_mapa"]!="caba")
-        df.loc[mask, "estrato_mapa"] = "provincia de " + df.loc[mask, "estrato_mapa"]
-
+        }
+        df["estrato_mapa"] = df["estrato"].replace(dicc_ign)                                                    #ccrea una columna nuev a[estrato], reemplazando los valores los dicc_ign. los valores no incluidos se mantienen intactos
+        
+        mask = ~df["estrato_mapa"].str.contains("provincia", na=False) & (df["estrato_mapa"]!="caba") # crea una amscara booleana de TRUE/FALSE par las filas que necesitan. TRUE si no contiene provincia y no es CABA. # Si no es caba y no dice provincia, le agregamos el prefijo para probar suerte
+        df.loc[mask, "estrato_mapa"] = "provincia de " + df.loc[mask, "estrato_mapa"]          # si la imagen del candidato existe entonces las ajustamos a 0 o 100 si pasa alguna de las dos. Función Clip. f(x) = min(max(x, 0), 100).
+    
     return df
 
-def unificar_sexo(df):                                                                                          # vamos a detectar las columnas de sexo y sus derivados: generando sexo_mas_unificado y sexo_fem_unificado
+def unificar_sexo(df):                                                                                                       ## vamos a detectar las columnas de sexo y sus derivados: generando sexo_mas_unificado y sexo_fem_unificado
     df_out = df.copy() ## Busca todas las columnas que empiecen con 'sexo_'
-    cols_sexo = [c for c in df_out.columns if c.startswith("sexo_")]                                       #buscamos todas las columnas que empiecen por sexo
-    cols_fem = [c for c in cols_sexo if "fem" in c or "mujer" in c or c.endswith("_f")]                   #filtramos por palabras claves entre los "sexo"
+    cols_sexo = [c for c in df_out.columns if c.startswith("sexo_")]                                                         #buscamos todas las columnas que empiecen por sexo
+    cols_fem = [c for c in cols_sexo if "fem" in c or "mujer" in c or c.endswith("_f")]                                      #filtramos por palabras claves entre los "sexo"
     cols_masc = [c for c in cols_sexo if "masc" in c or "hombre" in c or c.endswith("_m")]
 
     if cols_fem:
-        df_out["sexo_femenino_unificado"] = df_out[cols_fem].sum(axis=1).clip(0, 1)                 #si tenía sexo_fem=1 y sexo_mujer=0 → 1. si tenía errores tipo 1 y 1 → queda 2 → clip(0,1) lo baja a 1.
-        df_out = df_out.drop(columns=cols_fem)                                                      # Borra las originales para no duplicar.
+        df_out["sexo_femenino_unificado"] = df_out[cols_fem].sum(axis=1).clip(0, 1)                                  #si tenía sexo_fem=1 y sexo_mujer=0 → 1. si tenía errores tipo 1 y 1 → queda 2 → clip(0,1) lo baja a 1.
+        df_out = df_out.drop(columns=cols_fem)                                                                       # Borra las originales para no duplicar.
     if cols_masc:
         df_out["sexo_masculino_unificado"] = df_out[cols_masc].sum(axis=1).clip(0, 1)
         df_out = df_out.drop(columns=cols_masc)
     return df_out
 
-def imputar_datos(df_limpio):  # ahora que tenemos las columnas vamos a IMPUTAR con MICE que utiiliza las relaciones matematicas entre variables para estimar los valores faltantes.
+def imputar_datos(df_limpio):                                                                                                # ahora que tenemos las columnas vamos a IMPUTAR con MICE que utiiliza las relaciones matematicas entre variables para estimar los valores faltantes.
+    
     #columnas categoricas
-
-    df = df_limpio.copy()                                                                          # hacemos una copia del DF
-    cols_cat = [c for c in ["estrato", "sexo", "nivel_educativo"] if c in df.columns]               # Elegimos qué variables categóricas vamos a usar para ayudar a la predicción.
-    if "voto" in df.columns: df = pd.get_dummies(df, columns=["voto"], dummy_na=False)               ## # BINARIZAMOS "voto" y "voto_anterior"(One-Hot Encoding) para que el modelo 'vea' a quién vota la gente. # y use eso para predecir su estrato/edad faltante.
+    df = df_limpio.copy()                                                                                                    ## hacemos una copia del DF
+    cols_cat = [c for c in ["estrato", "sexo", "nivel_educativo"] if c in df.columns]                                       # Elegimos qué variables categóricas vamos a usar para ayudar a la predicción.
+    if "voto" in df.columns: df = pd.get_dummies(df, columns=["voto"], dummy_na=False)                                       ## # BINARIZAMOS "voto" y "voto_anterior"(One-Hot Encoding) para que el modelo 'vea' a quién vota la gente. # y use eso para predecir su estrato/edad faltante.
     if "voto_anterior" in df.columns: df = pd.get_dummies(df, columns=["voto_anterior"], dummy_na=False)
 
     # Binarizamos las demográficas faltantes
@@ -167,16 +164,17 @@ def imputar_datos(df_limpio):  # ahora que tenemos las columnas vamos a IMPUTAR 
     # ... Repite 20 veces (max_iter) hasta que los números se estabilizan (convergen).
     imputer = IterativeImputer(estimator=LinearRegression(), max_iter=20, random_state=42, min_value=0) # creamos el objeto MICE que imputará los valores faltantes usando regresiones lineales iteradas. 
     
-    
-    cols_si = [c for c in df_encoded.columns if c not in ["fecha", "encuesta", "estrato_mapa"]]    # celeccionamos todas las columnas numéricas excepto los IDs y Fechas (que no tienen correlación matemática útil).
+    #columnas numerica 
+    cols_si = [c for c in df_encoded.columns if c not in ["fecha", "encuesta", "estrato_mapa"]]     # seleccionamos todas las columnas numéricas excepto los IDs y Fechas (que no tienen correlación matemática útil).
     if cols_si:
-        try:    #Abre bloque seguro para ejecutar el imputador sin romper el programa si falla.
-            df_encoded[cols_si] = imputer.fit_transform(df_encoded[cols_si])     ## ajusta regresiones internas y rellena todos los valores faltantes. El imputador devuelve una matriz numérica completa
+        try:                                                                     #Abre bloque seguro para ejecutar el imputador sin romper el programa si falla.
+            df_encoded[cols_si] = imputer.fit_transform(df_encoded[cols_si])     ## ajusta regresiones internas y rellena todos los valores faltantes. El imputador devuelve una matriz numérica completa y la
             if "edad" in df_encoded.columns: df_encoded["edad"] = df_encoded["edad"].round().astype(int) # Si la columna “edad” existe luego del proceso entonces redondeo: La edad estimada puede ser 34.6 años -> pasamos a 35.
         except: 
-            pass # si falla (ej: matriz vacía), devolvemos como estaba.
+            pass                                                                 # si falla (ej: matriz vacía), devolvemos como estaba.
         
     return df_encoded
+
 def aplicar_ponderacion(df, archivo_censo, col_variable):
     print(f"\n--- INICIANDO PONDERACIÓN POR: {col_variable.upper()} ---")
     
@@ -213,24 +211,29 @@ def aplicar_ponderacion(df, archivo_censo, col_variable):
     print("Ponderación aplicada exitosamente.")
     return df
 
-# Graficos
-def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1, gdf_mapa=None):    # ahora GRAFICOS usando matplotlib. DF: tabla de graficos. col x/ col_y
-    plt.style.use('seaborn-v0_8-whitegrid')                                      # configuramos estética (fondo blanco con grilla suave).
+# GRAFICOS
 
-#Asegurar pesos 
+def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1, gdf_mapa=None): # ahora GRAFICOS usando matplotlib. DF: tabla de graficos. col x/ col_y. funcion principal de graficos
+    plt.style.use('seaborn-v0_8-whitegrid')                                                  # configuramos estética (fondo blanco con grilla suave).
+                                                                                             # 1 HISTOGRAMA- vamos a dar la opcion de elegir el grafico: histograma.extrame los valores de las columnas X y lo guarda en "variables" # "¿Cómo se distribuye esta variable?" (Ej: ¿Hay mucha gente joven o mucha gente vieja?).
+    #Asegurar pesos 
     df_plot = df.copy()
     if 'peso_encuesta' not in df_plot.columns:
-        df_plot['peso_encuesta'] = 1.0    
-if estilo == 1:
+        df_plot['peso_encuesta'] = 1.0
+    
+    
+    if estilo == 1:
         variable = df[col_x].dropna()
         plt.figure(figsize=(10, 6))
-# Intentamos calcular mediana solo si es numérico
+        
+        # Intentamos calcular mediana solo si es numérico
         try:
             mediana = variable.median()
             es_numerico = True
         except:
             es_numerico = False
- if es_numerico:  # Si es número, histograma normal con curva y mediana
+
+        if es_numerico:  # Si es número, histograma normal con curva y mediana
             pesos = df_plot.loc[variable.index, 'peso_encuesta']
             plt.hist(variable, bins=20, weights=pesos, edgecolor="black", color="#69b3a2", alpha=0.7, label="Frecuencia")
             plt.axvline(mediana, color='#d62728', linestyle='dashed', linewidth=2, label=f'Mediana: {mediana:.1f}')
@@ -240,20 +243,22 @@ if estilo == 1:
             conteo = variable.value_counts()
             conteo.plot(kind='bar', color="#69b3a2", edgecolor="black", alpha=0.7)
             plt.xticks(rotation=0 if len(conteo) < 4 else 45)
-      plt.title(f"Distribución de {col_x}", fontsize=15, fontweight='bold')
+
+        plt.title(f"Distribución de {col_x}", fontsize=15, fontweight='bold')
         plt.ylabel("Cantidad de Casos")
         plt.xlabel(col_x)
         plt.legend() # Muestra la etiqueta de la mediana
         plt.grid(axis='y', alpha=0.3)
         plt.tight_layout(); plt.show()
 
-elif estilo == 2 and col_y:                                                              # 2 SCATTATER: dos variables numericas. Dibuja puntos en un grado cartesiano.
+    elif estilo == 2 and col_y:                                                              # 2 SCATTATER: dos variables numericas. Dibuja puntos en un grado cartesiano.
         data = df_plot[[col_x, col_y, 'peso_encuesta']].dropna()                                                   # "¿Qué relación hay entre A y B?" (Ej: A mayor edad, ¿aumenta o baja la probabilidad de voto?).
         x = data[col_x]
         y = data[col_y]
         w = data['peso_encuesta']
         plt.figure(figsize=(10, 6))
- # TRUCO VISUAL: El tamaño (s) depende del peso. Multiplico por 30 para que se vean.
+
+        # TRUCO VISUAL: El tamaño (s) depende del peso. Multiplico por 30 para que se vean.
         sizes = w * 30 
         plt.scatter(x, y, alpha=0.5, color="#4c72b0", s=sizes, label="Casos")
         
@@ -268,45 +273,22 @@ elif estilo == 2 and col_y:                                                     
         plt.xlabel(col_x); plt.ylabel(col_y)
         plt.legend(); plt.tight_layout(); plt.show()
 
-        plt.figure(figsize=(10, 6))
-        plt.hist(variable, bins=20, edgecolor="black", color="#69b3a2", alpha=0.7, label="Frecuencia")
-        plt.axvline(mediana, color='#d62728', linestyle='dashed', linewidth=2, label=f'Mediana: {mediana:.1f}') 
-        plt.title(f"Distribución de {col_x}", fontsize=15, fontweight='bold')
-        plt.ylabel("Cantidad de Casos")
-        plt.xlabel(col_x)
-        plt.legend() # Muestra la etiqueta de la mediana
-        plt.grid(axis='y', alpha=0.3)
-        plt.tight_layout(); plt.show()
-
-   elif estilo == 2 and col_y: # Scatter con Línea de Tendencia
-        # Limpiamos datos para cálculo matemático
-        data = df[[col_x, col_y]].dropna()
-        x = data[col_x]
-        y = data[col_y]
-        plt.figure(figsize=(10, 6))
-        plt.scatter(x, y, alpha=0.5, color="#4c72b0", label="Casos")
-        # CÁLCULO DE TENDENCIA (y = mx + b)
-        if len(x) > 1:
-            m, b = np.polyfit(x, y, 1) # Ajuste lineal
-            plt.plot(x, m*x + b, color='#d62728', linewidth=2, label=f'Tendencia')
-        plt.title(f"Correlación: {col_x} vs {col_y}", fontsize=15, fontweight='bold')
-        plt.xlabel(col_x); plt.ylabel(col_y)
-        plt.legend()
-        plt.tight_layout(); plt.show()
-
-  elif estilo == 3 and col_y and col_grupo: # Scatter con Centroides
-        grupos = df[col_grupo].dropna().unique()
-        colores = plt.cm.tab10(np.linspace(0, 1, len(grupos)))
-        mapa_col = {g: colores[i] for i, g in enumerate(grupos)}
+    elif estilo == 3 and col_y and col_grupo:                                                # 3 SCATTER con color VARIABLES (X, Y, variable categorica). Dibuja puntos inivisibles.
+        grupos = df[col_grupo].dropna().unique()                                                      # "¿La relación entre A y B cambia según el Grupo C?" (Ej: Voto vs Edad, pero pintado por Sexo).
+        colores = plt.cm.tab10(np.linspace(0, 1, len(grupos)))                               
+        mapa_col = {g: colores[i] for i, g in enumerate(grupos)}                                 # Asigna color a grupo.
         plt.figure(figsize=(11, 7))
+
         # 1. Dibujamos los puntos (Fondo)
         for g in grupos:
             subset = df[df[col_grupo] == g]
             plt.scatter(subset[col_x], subset[col_y], c=[mapa_col[g]], alpha=0.3, s=30) # Puntos chicos y transparentes
+            
             # 2. Dibujamos el CENTROIDE (Punto Gordo Promedio)
             centro_x = subset[col_x].mean()
             centro_y = subset[col_y].mean()
             plt.scatter(centro_x, centro_y, c=[mapa_col[g]], s=200, edgecolor='black', marker='X', label=f"{g} (Promedio)")
+
         plt.title(f"Segmentación: {col_x} vs {col_y} por {col_grupo}", fontsize=15, fontweight='bold')
         plt.xlabel(col_x); plt.ylabel(col_y)
         plt.legend(title="Promedios por Grupo", bbox_to_anchor=(1.05, 1), loc='upper left') # Leyenda afuera
@@ -341,8 +323,16 @@ elif estilo == 2 and col_y:                                                     
         plt.tight_layout()
         plt.show()
 
-elif estilo == 5 and col_y:                                                             # 5. BARRAS
-        resumen = df.groupby(col_x)[col_y].agg(['mean', 'std', 'count']).sort_index()       # calculamos Promedio (mean) Y Desvío Estándar (std) al mismo tiempo
+    elif estilo == 5 and col_y:                                                             # 5. BARRAS
+        # Usamos una función lambda para aplicar los pesos a cada grupo
+        resumen = df_plot.groupby(col_x).apply(
+            lambda x: pd.Series({
+                'mean': np.average(x[col_y], weights=x['peso_encuesta']),
+                'count': len(x),
+                'std': x[col_y].std() # Desvío estándar aproximado
+            })
+        ).sort_index()
+        # ----------------------------------       # calculamos Promedio (mean) Y Desvío Estándar (std) al mismo tiempo
         resumen['se'] = resumen['std'] / np.sqrt(resumen['count'])                          # Calculamos el error estándar (para el intervalo de confianza básico)
         plt.figure(figsize=(12, 6))
         
@@ -362,34 +352,30 @@ elif estilo == 5 and col_y:                                                     
         plt.tight_layout()
         plt.show()
 
-   elif estilo == 6 and col_y:                                                              # 6. LÍNEAS. perfecto para mostrar tendencias, evoluciones o comportamientos. por ejemplo, cuanto cambia la probabilidad de voto dependiendo de alguna situacion del encuestado
-        data_agg = df.groupby(col_x)[col_y].mean().sort_index()                              # Agregación por promedio.
+    elif estilo == 6 and col_y:                                                              # 6. LÍNEAS ponderadas. perfecto para mostrar tendencias, evoluciones o comportamientos. por ejemplo, cuanto cambia la probabilidad de voto dependiendo de alguna situacion del encuestado
+        data_agg = df_plot.groupby(col_x).apply(                   
+            lambda x: np.average(x[col_y], weights=x['peso_encuesta'])).sort_index()                    # Calculamos el promedio ponderado para cada punto del eje X
+       
         plt.figure(figsize=(12, 6))
-        plt.plot(data_agg.index, data_agg.values, marker='o', markersize=8,                   # dibujamos la línea (más gruesa y con marcadores sólidos)
+        plt.plot(data_agg.index, data_agg.values, marker='o', markersize=8,                   # dibujamos la línea (Más gruesa y con marcadores sólidos)
                  linewidth=3, color="#4c72b0", label=col_y)
+        
         for x, y in zip(data_agg.index, data_agg.values):                                     # scribir el valor en cada punto
 
             texto = f"{y:.1f}%" if y > 1 else f"{y:.2f}"                                     # Formato: si es chico (0.45) lo muestra como porcentaje, si es grande (45) como entero
             if "probabilidad" in col_y or "imagen" in col_y: 
-                 texto = f"{y:.1f}%" # Forzamos % si es probabilidad
+                 texto = f"{y:.1f}%"                                  # Forzamos % si es probabilidad
 
-            plt.annotate(texto, 
-                         (x, y), 
-                         textcoords="offset points", 
-                         xytext=(0, 10), # 10 pixeles arriba del punto
-                         ha='center', 
-                         fontweight='bold',
-                         fontsize=10,
-                         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8)) 
-                         # La cajita blanca de fondo para que se lea siempre
+            plt.annotate(texto, (x, y), textcoords="offset points", 
+                         xytext=(0, 10), ha='center', fontweight='bold',
+                         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8))
 
-        plt.title(f"Evolución: {col_y} según {col_x}", fontsize=16, fontweight='bold')
+        plt.title(f"Evolución Ponderada: {col_y} según {col_x}", fontsize=16, fontweight='bold')
         plt.ylabel("Valor Promedio")
-        plt.grid(True, linestyle='--', alpha=0.3) # Grilla muy suave
-        plt.tight_layout()
-        plt.show()
-
-elif estilo == 7 and gdf_mapa is not None:                                             # 7. MAPA
+        plt.grid(True, linestyle='--', alpha=0.3)
+        plt.tight_layout(); plt.show()
+        
+    elif estilo == 7 and gdf_mapa is not None:                                             # 7. MAPA
 
         print(f"Generando mapa para: {col_x}")
 
@@ -398,8 +384,20 @@ elif estilo == 7 and gdf_mapa is not None:                                      
             return
         
         # Promedios por provincia
-        datos = df.groupby("estrato_mapa")[col_x].agg(["mean", "count"]).reset_index()
-        datos.rename(columns={"mean": "valor_medio", "count": "n"}, inplace=True)
+       # 1. Multiplicamos Valor * Peso
+        df_temp = df_plot.copy()
+        df_temp["suma_pond"] = df_temp[col_x] * df_temp["peso_encuesta"]
+        
+        # 2. Sumamos numeradores y denominadores por provincia
+        datos = df_temp.groupby("estrato_mapa")[["suma_pond", "peso_encuesta"]].sum().reset_index()
+        
+        # 3. Dividimos para sacar el promedio real
+        datos["valor_medio"] = datos["suma_pond"] / datos["peso_encuesta"]
+        
+        # (Opcional) Agregamos conteo de casos 'n'
+        conteo = df_temp.groupby("estrato_mapa").size().reset_index(name="n")
+        datos = datos.merge(conteo, on="estrato_mapa")
+        # ----------------------------------------
 
         # Unimos con el shapefile
         final = gdf_mapa.merge(datos, left_on="geo_key", right_on="estrato_mapa", how="left")
@@ -420,7 +418,8 @@ elif estilo == 7 and gdf_mapa is not None:                                      
 
         # Gráfico del mapa mejorado
         fig, ax = plt.subplots(1, 1, figsize=(10, 12))
-final.plot(
+
+        final.plot(
             column="valor_medio",
             cmap='OrRd',
             ax=ax,
@@ -439,12 +438,15 @@ final.plot(
         plt.title(f"Mapa: {col_x} por provincia\n(promedio)", fontsize=16)
         plt.show()
 
+
 # Ejecucucion
-if __name__ == "__main__":                                                             # Garantiza que el código SOLO se ejecuta si corrés el archivo directamente (no si lo importás).
+if __name__ == "__main__":                                                      # Garantiza que el código SOLO se ejecuta si corrés el archivo directamente (no si lo importás).
+
     entrada = input("Ingresa el nombre del archivo: ").strip()
-    ARCHIVO = entrada                                                          # Definir nombre del archivo (Cambiar si usás otro CSV).
+    ARCHIVO = entrada                                                       # Definir nombre del archivo (Cambiar si usás otro CSV).
     
-    try:                                                                               #Inicia bloque
+
+    try:                                                                                     #Inicia bloque
         print("¡HOLA GRUPO! Estoy procesando datos del CSV...")
         
         # 1. CARGA
@@ -452,81 +454,147 @@ if __name__ == "__main__":                                                      
         df_clean = preparar_base(df_raw)  # Limpia nombres y nulos.
         df_full = imputar_datos(df_clean) # Rellena datos faltantes con IA.
         df_full = unificar_sexo(df_full)  # Arregla dummies de sexo.
-        
         gdf_argentina = cargar_mapa_ign() 
 
+        #RECUPERACIÓN DE COLUMNAS DE TEXTO ---
+        
+        columnas_a_rescatar = ["estrato_mapa", "nivel_educativo", "estrato"]              # La imputación borra las columnas originales, así que las rescatamos de df_clean
+        
+        for col in columnas_a_rescatar:
+            if col in df_clean.columns:
+                df_full[col] = df_clean[col]
+        # -----------------------------------------
+
+        # ... despues de df_full = unificar_sexo(df_full) ...
         if "estrato_mapa" in df_clean.columns: 
             df_full["estrato_mapa"] = df_clean["estrato_mapa"]
+        
+        # --- [PEGAR ESTO] INICIO BLOQUE PONDERACIÓN ---
+        
+        print("\n--- AJUSTE POBLACIONAL ---")
+        print("[1] Por Sexo")
+        print("[2] Por Edad (16-29, 30-49, 50+)")
+        print("[3] Por Nivel Educativo (Primaria, Secundaria, Superior)")
+        print("[4] Por Estrato (Provincia)")
+        print("[5] No ponderar")
+        
+        opcion_pond = input("Elegí una opción: ").strip()
+        col_para_ponderar = None 
+        
+        if opcion_pond == '1':
+            df_full['sexo_texto'] = np.where(df_full['sexo_femenino_unificado'] > 0, 'femenino', 'masculino')
+            col_para_ponderar = 'sexo_texto'
+            
+        elif opcion_pond == '2':
+            # AGREGADO: Convierte edad numérica en rangos de texto
+            bins = [0, 29, 49, 150]
+            labels = ['16-29', '30-49', '50+']
+            df_full['rango_etario'] = pd.cut(df_full['edad'], bins=bins, labels=labels).astype(str)
+            col_para_ponderar = 'rango_etario'
+            
+        elif opcion_pond == '3':
+            # LOGICA DE EDUCACIÓN
+            # 1. Aseguramos que sea texto y minúscula
+            edu = df_full['nivel_educativo'].astype(str).str.lower()
+            
+            # 2. Creamos las condiciones para agrupar
+            # Si dice universitario, terciario o posgrado -> SUPERIOR
+            cond_superior = edu.str.contains("univ") | edu.str.contains("terc") | edu.str.contains("posgrado") | edu.str.contains("sup")
+            
+            # Si dice secundaria o polimodal o medio -> SECUNDARIA
+            cond_secundaria = edu.str.contains("secund") | edu.str.contains("poli") | edu.str.contains("medio")
+            
+            # 3. Aplicamos la clasificación
+            condiciones = [cond_superior, cond_secundaria]
+            elecciones = ['superior', 'secundaria']
+            
+            # Si no es ni superior ni secundaria, asumimos 'primaria' (el resto)
+            df_full['educacion_agrupada'] = np.select(condiciones, elecciones, default='primaria')
+            col_para_ponderar = 'educacion_agrupada'
+            
+        elif opcion_pond == '4':
+            # PONDERACIÓN GEOGRÁFICA
+            # Usamos 'estrato_mapa' que ya viene limpia desde el inicio (con "provincia de...")
+            col_para_ponderar = 'estrato_mapa'
+            
+        else:
+            print("Seguimos sin ponderar.")
+            df_full['peso_encuesta'] = 1.0
 
+        if col_para_ponderar:
+            # Seleccionamos nombre automático según opción
+            nombres_auto = {'1':'censo_sexo.csv', '2':'censo_edad.csv', '3':'censo_educacion.csv', '4':'censo_estrato.csv'}
+            nombre_default = nombres_auto.get(opcion_pond, "censo.csv")
+            
+            archivo_censo = input(f"Nombre del CSV Censo (Enter para '{nombre_default}'): ").strip()
+            if not archivo_censo: archivo_censo = nombre_default
+            if not archivo_censo.lower().endswith(".csv"): archivo_censo += ".csv"
+            
+            df_full = aplicar_ponderacion(df_full, archivo_censo, col_para_ponderar)
+        
+        # --- FIN BLOQUE PONDERACIÓN ---
+        
         # 2. SELECCIÓN DE OBJETIVO (A QUIÉN QUEREMOS PREDECIR)  # filtra columnas que sean de voto actual.
         cols_voto = [c for c in df_full.columns if "voto_" in c and "anterior" not in c] # agarra todas las columnas de voto actual (voto_a, voto_b, voto_c, etc.). Descarta las de voto anterior.
         col_target = listar_y_elegir(cols_voto, "¿A quien queres trackear?") # Muestra menú interactivo y el usuario elige qué candidato quiere modelar.
-
+        
         # 3. MODELADO LOGÍSTICO (REGRESIÓN)
         ### fecha → no predice
-        ### encuesta (ID) → ruido
+        ### encuesta (ID) → hacen ruido y no se mide
         ### el propio col_target → escaparía fuga de datos
         ### otros "voto" actuales → también fuga de datos.
         
-        excluir = ["fecha","encuesta", "estrato_mapa", col_target] + [c for c in df_full.columns if "voto_" in c and c!=col_target]  ## definimos las variables que queremos excluir de para graficar. X (predictoria) e Y (objetivo)
-        X = df_full.drop(columns=excluir, errors='ignore')  # indepdencia necesaria para elegir que variables predecir       # Excluimos 'fecha' y 'encuesta' (no predicen) y el propio voto para no hacer trampa.
-        Y = df_full[col_target]                                                                                      ## pero las agregamos aca. 
+        excluir = ["fecha","encuesta", "estrato_mapa", "sexo_texto", "peso_encuesta", "rango_etario", "nivel_educativo", "estrato", "educacion_agrupada", col_target] + [c for c in df_full.columns if "voto_" in c and c!=col_target]  ## definimos las variables que queremos excluir de para graficar. X (predictoria) e Y (objetivo)
+        X = df_full.drop(columns=excluir, errors='ignore')  # indepdencia necesaria para elegir que variables predecir        # Excluimos 'fecha' y 'encuesta' (no predicen) y el propio voto para no hacer trampa.
+        Y = df_full[col_target]                                                                                               ## pero las agregamos aca. 
         
-        # 3.2 Entrenamos el modelo logístico. # es la Instancia del modelo "Logit". max_iter=1000 evita problemas de convergencia.
+        # Entrenamos el modelo logístico. # es la Instancia del modelo "Logit". max_iter=1000 evita problemas de convergencia.
         model = LogisticRegression(max_iter=1000)     # Ecuación: P(Voto) = 1 / (1 + e^-(B0 + B1*Edad + B2*Estrato...))
-        model.fit(X, Y)                                ## Ajusta la regresión logística usando todas las filas completas.
+        # Le pasamos el peso de cada encuestado
+        model.fit(X, Y, sample_weight=df_full['peso_encuesta'])                               # Ajusta la regresión logística usando todas las filas completas.
         
         
         df_full["probabilidad_voto"] = model.predict_proba(X)[:, 1] * 100   ## # Creamos la variable 'Probabilidad de Voto' (0 a 100) para usar en gráficos.  #aplica la sigmoide #convierte probabilidad a porcentaje
-        
 
-        # Extraemos los Coeficientes (Betas) de la regresión. # coeficiente positivo: Aumenta chance de voto. # negativo: Disminuye.
+                                                                                # extraemos los Coeficientes (Betas) de la regresión. # coeficiente positivo: Aumenta chance de voto. # negativo: Disminuye.
         coefs = pd.DataFrame({"Variable": X.columns, "Peso": model.coef_[0]})   ## extrae los coeficientes, es decir las BETAS (b0 b1, ...) cada columna X elegida.... dentro del DF para ponerlo dentro de "coefs"
-        coefs["Impacto_Absoluto"] = coefs["Peso"].abs() #                        # vamos a medir el impacto absoluto de cada coefs y los valores absolutos de su PESO en la variable elegida
+        coefs["Impacto_Absoluto"] = coefs["Peso"].abs() #                         # vamos a medir el impacto absoluto de cada coefs y los valores absolutos de su PESO en la variable elegida
         top_5 = coefs.sort_values("Impacto_Absoluto", ascending=False).head(5)    # mostramos los primeros 5 #ordena con sort.values() dentro de "top_5"
         
         print(f"\n Los cinco coeficientes que mas influyen: {col_target.upper()}")
         print(top_5[["Variable", "Peso"]].to_string(index=False))
         print("------------------------------------------------------------------\n")
 
-        # Elegir tracking tempral (rolling window mean())
+                                                                                                           # Elegir tracking tempral (rolling window mean())
         print("\n GENERANDO TRACKING TEMPORAL...")
+        df_track = df_full[["fecha", "encuesta", col_target]].copy() # 1. Preparamos los datos: copiamos solo lo necesario
         
-        # 1. Preparamos los datos: copiamos solo lo necesario
-        df_track = df_full[["fecha", "encuesta", col_target]].copy()
-
-        # 2. Aseguramos que la fecha sea cronológica (Matemática: Ordenamiento Temporal)
-        df_track["fecha"] = pd.to_datetime(df_track["fecha"], format="mixed", dayfirst=False)
-        df_track = df_track.set_index("fecha").sort_index()
-        
-        # 3. Menú para elegir la ventana (El "N" del promedio)
+        df_track["fecha"] = pd.to_datetime(df_track["fecha"], format="mixed", dayfirst=False)              # 2. Aseguramos que la fecha sea cronológica (Matemática: Ordenamiento Temporal)
+        df_track = df_track.set_index("fecha").sort_index()                                                # 3. Menú para elegir la ventana (El "N" del promedio)
         ventana_str = listar_y_elegir(["Semanal (7D)", "Mensual (30D)", "Trimestral (90D)"], "Elegí ventana de suavizado")
         ventana = "90D" if "90" in ventana_str else "30D" if "30" in ventana_str else "7D"
+    
+        df_track["media_movil"] = df_track[col_target].rolling(ventana).mean()                             # 4. Cálculo Matemático: Media Móvil Simple (SMA).  # Formula: Promedio de los puntos entre (t) y (t - ventana)
         
-        # 4. Cálculo Matemático: Media Móvil Simple (SMA)
-        # Formula: Promedio de los puntos entre (t) y (t - ventana)
-        df_track["media_movil"] = df_track[col_target].rolling(ventana).mean()
-        
-        # 5. Gráfico
         plt.figure(figsize=(10, 5))
-        ax = df_track["media_movil"].plot(linewidth=2.5, color="#d62728")
+        ax = df_track["media_movil"].plot(linewidth=2.5, color="#d62728")                                  # 5. Gráfico
         ax.yaxis.set_major_formatter(mtick.PercentFormatter(1.0, decimals=0)) # Eje Y en %
         plt.title(f"Evolución Intención de Voto: {col_target.upper()} ({ventana})", fontsize=14)
         plt.grid(True, linestyle="--", alpha=0.5); plt.tight_layout(); plt.show()
+
         
-
-         print("Un segundo que estamos Guardando archivos...") 
-
+        
+        print("Un segundo que estamos guardando archivos...")                                              # EXPORTACIÓN DE ARCHIVOS (FIX PARA WINDOWS). 
 
         # A) Guardar la Base Final Completa
-        df_full.to_csv("base_final_procesada.csv", index=False)         #al DF #df_full" la guardamos en un CSV
-        print("   -> 'base_final_procesada.csv' guardado.")
+        df_full.to_csv("base_final_procesada.csv", index=False)                                             #al DF #df_full" la guardamos en un CSV
+        print("-> 'base_final_procesada.csv' guardado.")
         
         # B) Guardar CSVs Binarizados (Tracking)
-        os.makedirs("archivos_tracking", exist_ok=True)            # crea una carpeta en tu servidor
+        os.makedirs("archivos_tracking", exist_ok=True)                                                      # crea una carpeta en tu servidor
         
         
-       # B) Guardar CSVs Binarizados (Tracking) - VERSIÓN BLINDADA
+        # B) Guardar CSVs Binarizados (Tracking) - VERSIÓN BLINDADA
         os.makedirs("archivos_tracking", exist_ok=True)
         
         # Limpieza profunda de nombres de columna por si las dummies generaron basura
@@ -547,7 +615,7 @@ if __name__ == "__main__":                                                      
         # MENÚ INTERACTIVO DE GRÁFICOS
         vars_disp = [c for c in df_full.columns if c not in ["fecha", "encuesta"]]             ## Quita columnas que no sirven para gráficos estadísticos.
         v_num = [c for c in vars_disp if df_full[c].nunique() > 5]                            # Numéricas (muchos valores). ## Sirve para SCATTER, HISTOGRAMAS, LINEAS, REGRESION VISUAL
-        posibles_cat = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior"]        # CORRECCIÓN: Definimos las categóricas explícitamente buscando en df_clean # Esto asegura que aparezcan "estrato", "sexo", "nivel_educativo"
+        posibles_cat = ["estrato", "sexo", "nivel_educativo", "voto", "voto_anterior", "rango_etario", "educacion_agrupada"]        # CORRECCIÓN: Definimos las categóricas explícitamente buscando en df_clean # Esto asegura que aparezcan "estrato", "sexo", "nivel_educativo"
         v_cat_reales = [c for c in posibles_cat if c in df_clean.columns]                     # Categóricas (pocos valores). ## Sirve para BOXPLOT, BARRAS, COMPARACIONES POR GRUPO
 
         v_cat = v_cat_reales
@@ -563,15 +631,14 @@ if __name__ == "__main__":                                                      
                 ("Gráfico de Líneas", "Ver Tendencia continua."),
                 ("MAPA ARGENTINA", "Ver mapa geográfico."), # <--- AGREGAR
             ]
-            opcion = listar_y_elegir(opciones_menu, "¿Qué gráfico querés hacer?")                           # Minimiza error humano
+            opcion = listar_y_elegir(opciones_menu, "¿Qué gráfico querés hacer?")                     # Minimiza error humano
             
-            if opcion == "Salir": break                                                                # Si elige salir [0], BREAK
+            if opcion == "Salir": break                                                              # Si elige salir [0], BREAK
             
             # Lógica de ruteo: según la opción, llama a la función graficar con los parámetros correctos.
-            if "Histograma" in opcion:                                                                 #Le pide al usuario elegir una variable (numérica).
+            if "Histograma" in opcion:                                                               #Le pide al usuario elegir una variable (numérica).
                 graficar_estilo_premium(df_full, listar_y_elegir(vars_disp, "Variable"), estilo=1)     # Llama a la función graficar_estilo_premium con estilo=1. Histograma = Frecuencia absoluta por intervalo
-
-
+            
             elif "Scatter Simple" in opcion:                                                                 #
                 graficar_estilo_premium(df_full, listar_y_elegir(v_num, "Eje X"), listar_y_elegir(v_num, "Eje Y"), estilo=2) #una variable para X #una variable para Y #Grupo para colorear
             
@@ -583,7 +650,7 @@ if __name__ == "__main__":                                                      
                 
                 df_temp = df_full.copy()
                 if cg in df_clean.columns: 
-                    df_temp[cg] = df_clean[cg] # <---  df_clean
+                    df_temp[cg] = df_clean[cg] # <--- CAMBIO CLAVE: df_clean
                 graficar_estilo_premium(df_temp, cx, cy, col_grupo=cg, estilo=3)
             
             elif "Boxplot" in opcion:
@@ -603,7 +670,7 @@ if __name__ == "__main__":                                                      
                 df_temp = df_full.copy()
                 df_temp[cx] = df_clean[cx] # <--- CAMBIO CLAVE: df_clean
                 graficar_estilo_premium(df_temp, cx, cy, estilo=5)
-
+                
                 df_temp = df_full.copy()
                 df_temp[cx] = df_raw[cx]
                 graficar_estilo_premium(df_temp, cx, cy, estilo=5)
@@ -612,22 +679,25 @@ if __name__ == "__main__":                                                      
                 cx = listar_y_elegir(["edad", "integrantes_h"], "Variable Continua (Eje X)")
                 cy = listar_y_elegir(["probabilidad_voto", "imagen_candidato"], "Variable (Eje Y)")    #Y(x)=promedio de todos los Y donde la variable X = x
                 graficar_estilo_premium(df_full, cx, cy, estilo=6)
-
             
-            if "MAPA" in opcion:  # Verificamos que la variable exista y tenga datos
+            
+            if "MAPA" in opcion:
+                # Verificamos que la variable exista y tenga datos
                 if 'gdf_argentina' in locals() and gdf_argentina is not None:
                     
-                lista_vip = [col_target, "probabilidad_voto"]
+                    # 1. Lista VIP: Tu candidato y la probabilidad van primero
+                    lista_vip = [col_target, "probabilidad_voto"]
                     
-                resto = [c for c in vars_disp if df_full[c].dtype != 'object' and c not in lista_vip]
+                    # 2. El resto de las numéricas
+                    resto = [c for c in vars_disp if df_full[c].dtype != 'object' and c not in lista_vip]
                     
-                opciones_mapa = lista_vip + resto                     #Unimos las listas para el menú
-
-                col = listar_y_elegir(opciones_mapa, "Variable para el mapa")
-                graficar_estilo_premium(df_full, col, estilo=7, gdf_mapa=gdf_argentina)
-            else:
+                    # 3. Unimos las listas para el menú
+                    opciones_mapa = lista_vip + resto
+                    
+                    col = listar_y_elegir(opciones_mapa, "Variable para el mapa")
+                    graficar_estilo_premium(df_full, col, estilo=7, gdf_mapa=gdf_argentina)
+                else:
                     print("Error: No se cargó el mapa (variable gdf_argentina vacía).")
 
     except Exception as e:
-        print(f"\n Error Inesperado: {e}")
-
+        print(f"\n Banca, hay un error inesperado: {e}")
