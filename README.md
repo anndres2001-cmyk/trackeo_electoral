@@ -16,7 +16,7 @@ Finalmente, el script entrena un modelo de regresión logística para identifica
 
 ## Requisitos y configuración
 
-Para ejecutar este software es necesario contar con un entorno de Python 3 que incluya las librerías pandas, numpy, matplotlib, geopandas y scikit-learn. Además, el script espera encontrar en el directorio de trabajo el archivo cartográfico "provincias.json" del Instituto Geográfico Nacional para la generación de mapas, así como los archivos CSV de referencia censal si se desea utilizar la función de ponderación.
+Para ejecutar este software es necesario contar con un entorno de Python 3 que incluya las librerías pandas, numpy, matplotlib, geopandas y scikit-learn. Además, el script espera encontrar en el directorio de trabajo el archivo cartográfico "provincias.json" (link de descarga: https://www.ign.gob.ar/NuestrasActividades/InformacionGeoespacial/CapasSIG) del Instituto Geográfico Nacional para la generación de mapas, así como los archivos CSV de referencia censal si se desea utilizar la función de ponderación.
 
 ## Guía de uso
 
