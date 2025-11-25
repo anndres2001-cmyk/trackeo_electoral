@@ -180,7 +180,7 @@ def imputar_datos(df_limpio):  # ahora que tenemos las columnas vamos a IMPUTAR 
 
 # Graficos
 
-def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1):    # ahora GRAFICOS usando matplotlib. DF: tabla de graficos. col x/ col_y
+def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1, gdf_mapa=None):    # ahora GRAFICOS usando matplotlib. DF: tabla de graficos. col x/ col_y
     plt.style.use('seaborn-v0_8-whitegrid')                                      # configuramos estética (fondo blanco con grilla suave).
     
     if estilo == 1: # Histograma con la mediana
