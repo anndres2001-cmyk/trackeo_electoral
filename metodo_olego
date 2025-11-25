@@ -177,16 +177,97 @@ def imputar_datos(df_limpio):  # ahora que tenemos las columnas vamos a IMPUTAR 
             pass # si falla (ej: matriz vacía), devolvemos como estaba.
         
     return df_encoded
+def aplicar_ponderacion(df, archivo_censo, col_variable):
+    print(f"\n--- INICIANDO PONDERACIÓN POR: {col_variable.upper()} ---")
+    
+    # 1. Cargamos la verdad (Censo)
+    try:
+        df_censo = pd.read_csv(archivo_censo)
+        # Convertimos el CSV a un diccionario: {'femenino': 0.52, 'masculino': 0.48}
+        target_dist = dict(zip(df_censo.iloc[:, 0].str.lower().str.strip(), df_censo.iloc[:, 1]))
+    except Exception as e:
+        print(f" Error al cargar {archivo_censo}: {e}")
+        return df # Devolvemos sin cambios si falla
+        
+    # 2. Calculamos tu muestra actual
+    # normalize=True nos da porcentajes (ej: 0.70 hombres, 0.30 mujeres)
+    sample_dist = df[col_variable].value_counts(normalize=True).to_dict()
+    
+    print("Comparativa (Muestra vs Realidad):")
+    weights_map = {}
+    
+    for cat, prop_real in target_dist.items():
+        if cat in sample_dist:
+            prop_muestra = sample_dist[cat]
+            # EL CÁLCULO MÁGICO: Peso = Realidad / Muestra
+            peso = prop_real / prop_muestra
+            weights_map[cat] = peso
+            print(f"   > {cat}: Muestra {prop_muestra:.2f} vs Real {prop_real:.2f} -> Peso: {peso:.2f}")
+        else:
+            print(f"   ⚠ Cuidado: La categoría '{cat}' está en el Censo pero NO en tu encuesta.")
+            weights_map[cat] = 1.0 # Neutro
+            
+    # 3. Aplicamos el peso a cada fila
+    df['peso_encuesta'] = df[col_variable].map(weights_map).fillna(1.0)
+    
+    print("Ponderación aplicada exitosamente.")
+    return df
 
 # Graficos
-
 def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1, gdf_mapa=None):    # ahora GRAFICOS usando matplotlib. DF: tabla de graficos. col x/ col_y
     plt.style.use('seaborn-v0_8-whitegrid')                                      # configuramos estética (fondo blanco con grilla suave).
-    
-    if estilo == 1: # Histograma con la mediana
-        variable = df[col_x].dropna() # Limpiamos los nulos para evitar errores
-        mediana = variable.median()
+
+#Asegurar pesos 
+    df_plot = df.copy()
+    if 'peso_encuesta' not in df_plot.columns:
+        df_plot['peso_encuesta'] = 1.0    
+if estilo == 1:
+        variable = df[col_x].dropna()
+        plt.figure(figsize=(10, 6))
+# Intentamos calcular mediana solo si es numérico
+        try:
+            mediana = variable.median()
+            es_numerico = True
+        except:
+            es_numerico = False
+ if es_numerico:  # Si es número, histograma normal con curva y mediana
+            pesos = df_plot.loc[variable.index, 'peso_encuesta']
+            plt.hist(variable, bins=20, weights=pesos, edgecolor="black", color="#69b3a2", alpha=0.7, label="Frecuencia")
+            plt.axvline(mediana, color='#d62728', linestyle='dashed', linewidth=2, label=f'Mediana: {mediana:.1f}')
+            plt.legend()
+        else:
+            # Si es texto (ej: Sexo, Voto), gráfico de conteo simple
+            conteo = variable.value_counts()
+            conteo.plot(kind='bar', color="#69b3a2", edgecolor="black", alpha=0.7)
+            plt.xticks(rotation=0 if len(conteo) < 4 else 45)
+      plt.title(f"Distribución de {col_x}", fontsize=15, fontweight='bold')
+        plt.ylabel("Cantidad de Casos")
+        plt.xlabel(col_x)
+        plt.legend() # Muestra la etiqueta de la mediana
+        plt.grid(axis='y', alpha=0.3)
+        plt.tight_layout(); plt.show()
+
+elif estilo == 2 and col_y:                                                              # 2 SCATTATER: dos variables numericas. Dibuja puntos en un grado cartesiano.
+        data = df_plot[[col_x, col_y, 'peso_encuesta']].dropna()                                                   # "¿Qué relación hay entre A y B?" (Ej: A mayor edad, ¿aumenta o baja la probabilidad de voto?).
+        x = data[col_x]
+        y = data[col_y]
+        w = data['peso_encuesta']
+        plt.figure(figsize=(10, 6))
+ # TRUCO VISUAL: El tamaño (s) depende del peso. Multiplico por 30 para que se vean.
+        sizes = w * 30 
+        plt.scatter(x, y, alpha=0.5, color="#4c72b0", s=sizes, label="Casos")
         
+        
+        if len(x) > 1: # CÁLCULO DE TENDENCIA (y = mx + b)
+            try:
+                m, b = np.polyfit(x, y, 1, w=w)                      # TRUCO MATEMÁTICO: Trendline ponderada (w=w)
+                plt.plot(x, m*x + b, color='#d62728', linewidth=2, label='Tendencia Pond.')
+            except: pass
+
+        plt.title(f"Correlación Ponderada: {col_x} vs {col_y}", fontsize=15, fontweight='bold')
+        plt.xlabel(col_x); plt.ylabel(col_y)
+        plt.legend(); plt.tight_layout(); plt.show()
+
         plt.figure(figsize=(10, 6))
         plt.hist(variable, bins=20, edgecolor="black", color="#69b3a2", alpha=0.7, label="Frecuencia")
         plt.axvline(mediana, color='#d62728', linestyle='dashed', linewidth=2, label=f'Mediana: {mediana:.1f}') 
