@@ -68,7 +68,7 @@ def preparar_base(df_raw): #vamos a usar el CSV como base cruda #vamos a normali
     cols = df.columns                                     # Guarda la lista de nombres limpios.
     print("\nDIAGNÓSTICO DE COLUMNAS")
 
-    try:                                                                                                   # con "try" niciamos un bloque que atrapará errores si falta alguna columna.
+    try:                                                                                                   # con "try" iniciamos un bloque que atrapará errores si falta alguna columna.
         c_fecha = [c for c in cols if "fecha" in c or "date" in c or "time" in c][0]                       # busca columna que tenga "fecha", "date" o "time". Toma la primera [0].
         c_id = [c for c in cols if ("ident" in c or "id_" in c or "encuesta" in c) and "fecha" not in c][0] # usca ID: debe decir "id" o "encuesta" PERO NO "fecha" (Lógica: A y No B).
         c_estrato_list = [c for c in cols if "estrato" in c or "socio" in c]                                # busca Estrato: puede no existir, por eso chequeamos si la lista está vacía al final.
@@ -99,11 +99,11 @@ def preparar_base(df_raw): #vamos a usar el CSV como base cruda #vamos a normali
 
     for col in vars_txt:                                                                                        # Recorremos una por una todas esas columnas. Inicia un bucle que iterará sobre cada nombre de columna en la lista vars_txt
 
-        if col in df.columns:                                                                                    ## verificamos que la columna exista realmente en el DataFrame.
+        if col in df.columns:                                                                                    # verificamos que la columna exista realmente en el DataFrame.
             df[col] = df[col].astype(str).str.strip().str.lower().replace(["nan", "none", "null", "", " "], np.nan) ##las estandariza y al resto las vuelve NaN
 
-    vars_num = ["edad", "integrantes_h", "imagen_candidato"]                                                      ## a las Variables numérica las forzamos a número. 'errors="coerce"' convierte errores en NaN (Vacío).
-    for col in vars_num:                                                                                         ## Lista de columnas numéricas que pueden venir mal cargadas.
+    vars_num = ["edad", "integrantes_h", "imagen_candidato"]                                                      # a las Variables numérica las forzamos a número. 'errors="coerce"' convierte errores en NaN (Vacío).
+    for col in vars_num:                                                                                         # Lista de columnas numéricas que pueden venir mal cargadas.
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
