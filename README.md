@@ -1,10 +1,10 @@
 # trackeo_electoral
 
-# Pipeline de Procesamiento y Análisis de Tracking Electoral
+# Procesamiento y análisis de tracking lectoral
 
 Este proyecto implementa una herramienta integral en Python para el procesamiento, imputación, ponderación y visualización de datos de encuestas electorales. El objetivo principal es transformar bases de datos crudas (CSV) en insights estratégicos, permitiendo corregir sesgos muestrales mediante técnicas estadísticas y explorar tendencias de voto a través de una interfaz interactiva.
 
-## Descripción del Flujo de Trabajo
+## Descripción del flujo de trabajo
 
 El script ejecuta una secuencia lineal de pasos diseñada para asegurar la consistencia de los datos antes de cualquier análisis. En primer lugar, se realiza una limpieza y normalización exhaustiva de las columnas, estandarizando nombres de variables críticas como fecha, sexo, edad y ubicación geográfica, además de detectar y eliminar registros inválidos que carezcan de información esencial.
 
@@ -14,11 +14,11 @@ Posteriormente, se ofrece un módulo de ajuste poblacional o ponderación (rakin
 
 Finalmente, el script entrena un modelo de regresión logística para identificar qué variables impactan más en la decisión de voto por un candidato específico y despliega un menú interactivo de visualización. Este menú permite generar histogramas, gráficos de dispersión, análisis de tendencias temporales y mapas de calor sobre la cartografía de Argentina.
 
-## Requisitos y Configuración
+## Requisitos y configuración
 
 Para ejecutar este software es necesario contar con un entorno de Python 3 que incluya las librerías pandas, numpy, matplotlib, geopandas y scikit-learn. Además, el script espera encontrar en el directorio de trabajo el archivo cartográfico "provincias.json" del Instituto Geográfico Nacional para la generación de mapas, así como los archivos CSV de referencia censal si se desea utilizar la función de ponderación.
 
-## Guía de Uso
+## Guía de uso
 
 Al iniciar el programa desde la terminal, se solicitará el nombre del archivo CSV que contiene la encuesta. El sistema procesará automáticamente la limpieza y la imputación de datos. A continuación, se presentará una serie de menús interactivos donde se deberá seleccionar el método de ponderación deseado y el candidato objetivo para el análisis predictivo.
 
