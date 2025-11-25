@@ -50,8 +50,7 @@ def listar_y_elegir(lista_opciones, mensaje="Seleccioná una opción"): #de form
             inp = input("Ingrese el número: ")    # pide el dato al usuario.
             idx = int(inp)                        # Intenta convertir ese string a numero entero
             
-            # Lógica Booleana: Verifica si el número está dentro del rango de la lista.
-            if 0 <= idx < len(lista_opciones):    #el indice dentro de a logica
+            if 0 <= idx < len(lista_opciones):    # Lógica Booleana: Verifica si el número está dentro del rango de la lista. #el indice dentro de a logica
                 val = lista_opciones[idx]         # recuperando el objeto real de la lista.
                 return val[0] if isinstance(val, tuple) else val # Devuelve el valor limpio.
             
@@ -134,6 +133,7 @@ def preparar_base(df_raw): #vamos a usar el CSV como base cruda #vamos a normali
         df.loc[mask, "estrato_mapa"] = "provincia de " + df.loc[mask, "estrato_mapa"]
 
     return df
+
 def unificar_sexo(df):                                                                                          # vamos a detectar las columnas de sexo y sus derivados: generando sexo_mas_unificado y sexo_fem_unificado
     df_out = df.copy() ## Busca todas las columnas que empiecen con 'sexo_'
     cols_sexo = [c for c in df_out.columns if c.startswith("sexo_")]                                       #buscamos todas las columnas que empiecen por sexo
