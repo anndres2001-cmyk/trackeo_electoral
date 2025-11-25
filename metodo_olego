@@ -231,21 +231,34 @@ def graficar_estilo_premium(df, col_x, col_y=None, col_grupo=None, estilo=1, gdf
         plt.legend(title="Promedios por Grupo", bbox_to_anchor=(1.05, 1), loc='upper left') # Leyenda afuera
         plt.tight_layout(); plt.show()
 
-    elif estilo == 4 and col_y:                                                      # Boxplot
-        orden = sorted(df[col_x].unique().astype(str))         # Ordena las categorías del eje X alfabéticamente.
-        datos = [df.loc[df[col_x].astype(str)==c, col_y].values for c in orden]         # Crea una lista de arrays, uno por cada categoría.
-        plt.figure(figsize=(10, 6))
-        plt.boxplot(datos, labels=orden, showmeans=True, notch=True, patch_artist=True,   # Boxplot calcula: Mediana (línea central), Cuartiles 25% y 75% (caja), y Bigotes (1.5 * IQR).
-                    boxprops=dict(facecolor="white", color="#333"))
-        
-        # Jitter (Ruido): Agrega puntos dispersos aleatoriamente sobre el eje X para mostrar densidad.
-        # np.random.normal(i, 0.04): Centrado en la categoría 'i' con desviación 0.04.
-        for i, d in enumerate(datos, start=1):
-            x = np.random.normal(i, 0.04, size=len(d))
-            plt.plot(x, d, 'o', alpha=0.2, color="#55a868", markersize=4)
+    elif estilo == 4 and col_y:                                                              # 4- BOXPLOT: elegir variable numerica (Y) y categoricas(X).
+        orden = sorted(df[col_x].unique().astype(str))                                       # Ordena las categorías del eje X alfabéticamente.
+        datos = [df.loc[df[col_x].astype(str)==c, col_y].values for c in orden]              # crea una lista de cada categoria uno por cada categoría.
+        plt.figure(figsize=(12, 7))
+
+        bp = plt.boxplot(datos, tick_labels=orden, patch_artist=True, showmeans=True,             # Guardamos el gráfico en una variable 'bp' para poder pintarlo después
+                         medianprops=dict(color="#d62728", linewidth=2),                     # configuración de líneas: Mediana roja, Media (triángulo) amarilla
+                         meanprops=dict(marker='^', markerfacecolor='yellow', markeredgecolor='black'),
+                         boxprops=dict(color="black", linewidth=1.5))
+
+        colores = plt.cm.Set2(np.linspace(0, 1, len(datos)))                                 # coloreado inteligente (Una paleta distinta para cada caja)
+        for patch, color in zip(bp['boxes'], colores):
+            patch.set_facecolor(color)
+            patch.set_alpha(0.6)                                                             # Transparencia para ver la grilla de fondo
+  
+        for i, d in enumerate(datos, start=1):                                              # jitter (Ruido): Agrega puntos dispersos aleatoriamente sobre el eje X para mostrar densidad.
+            x = np.random.normal(i, 0.04, size=len(d))                                      # np.random.normal(i, 0.04): Centrado en la categoría 'i' con desviación 0.04.
+            plt.plot(x, d, 'o', alpha=0.3, color="black", markersize=3)
+
+            top_val = np.max(d) if len(d) > 0 else 0                                        # poner el "N=" arriba de cada caja
+            plt.text(i, top_val * 1.02, f'n={len(d)}', 
+                     ha='center', va='bottom', fontsize=9, fontweight='bold', color='#333')
             
-        plt.title(f"{col_y} por {col_x}", fontsize=14, fontweight='bold')
-        plt.grid(axis='y', alpha=0.3); plt.tight_layout(); plt.show()
+        plt.title(f"Distribución: {col_y} por {col_x}", fontsize=16, fontweight='bold')
+        plt.grid(axis='y', linestyle='--', alpha=0.4)
+        plt.xticks(rotation=45 if len(orden) > 4 else 0)                                     # rotamos las etiquetas si son muchas para que se lean bien
+        plt.tight_layout()
+        plt.show()
 
 elif estilo == 5 and col_y:                                                             # 5. BARRAS
         resumen = df.groupby(col_x)[col_y].agg(['mean', 'std', 'count']).sort_index()       # calculamos Promedio (mean) Y Desvío Estándar (std) al mismo tiempo
