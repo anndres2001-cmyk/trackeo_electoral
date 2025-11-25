@@ -469,7 +469,7 @@ if __name__ == "__main__":                                                      
         if "estrato_mapa" in df_clean.columns: 
             df_full["estrato_mapa"] = df_clean["estrato_mapa"]
         
-        # --- [PEGAR ESTO] INICIO BLOQUE PONDERACIÓN ---
+        # --- INICIO BLOQUE PONDERACIÓN ---
         
         print("\n--- AJUSTE POBLACIONAL ---")
         print("[1] Por Sexo")
